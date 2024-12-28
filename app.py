@@ -1,82 +1,84 @@
 import customtkinter as ctk
 from tkcalendar import Calendar
-import json
-import os
 
+from Task import Task
+from TaskWindow import TaskWindow
+from EditTaskWindow import EditTaskWindow
+import sqlite3
+from datetime import datetime
 # Настройка глобальных параметров CustomTkinter
 ctk.set_appearance_mode("System")  # Темный/светлый режим
 ctk.set_default_color_theme("blue")  # Цветовая тема
 
-# Путь для сохранения задач
-TASKS_FILE = "tasks.json"
+
+TASKS_DB = "tasks.db"
+
+def create_table():
+    conn = sqlite3.connect(TASKS_DB)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT, 
+            start_time TEXT,
+            end_time TEXT,
+            date TEXT NOT NULL,
+            tags TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
 
 
-# Функция для загрузки задач из файла
-def load_tasks():
-    if os.path.exists(TASKS_FILE):
-        with open(TASKS_FILE, "r") as file:
-            try:
-                return json.load(file)
-            except json.JSONDecodeError:
-                print("Ошибка: Некорректный формат файла задач. Файл будет перезаписан.")
-                return {}
-    return {}
+def get_tasks_by_date(date):
+    """
+    Извлекает задачи из базы данных, относящиеся к определённой дате.
+
+    :param date: Дата в формате "YYYY-MM-DD".
+    :return: Список объектов Task, относящихся к указанной дате.
+    """
+    conn = sqlite3.connect(TASKS_DB)
+    cursor = conn.cursor()
+    query = """
+        SELECT name, description, start_time, end_time, date, tags
+        FROM tasks
+        WHERE date = ?
+    """
+    cursor.execute(query, (date,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    tasks = []
+    for row in rows:
+        task = Task(
+            name=row[0],
+            description=row[1],
+            start_time=row[2],
+            end_time=row[3],
+            date=row[4],
+            tags=row[5].split(",") if row[5] else []
+        )
+        tasks.append(task)
+    return tasks
 
 
-# Функция для сохранения задач в файл
-def save_tasks(tasks):
-    with open(TASKS_FILE, "w") as file:
-        json.dump(tasks, file, indent=4)
 
 
-# Класс задачи
-class Task:
-    def __init__(self, name, description, start_time, end_time, tags):
-        self.name = name
-        self.description = description
-        self.start_time = start_time
-        self.end_time = end_time
-        self.tags = tags
 
-    def to_dict(self):
-        return {
-            "name": self.name,
-            "description": self.description,
-            "start_time": self.start_time,
-            "end_time": self.end_time,
-            "tags": self.tags,
-        }
 
-    @staticmethod
-    def from_dict(data):
-        try:
-            return Task(
-                data["name"],
-                data.get("description", ""),
-                data["start_time"],
-                data["end_time"],
-                data.get("tags", []),
-            )
-        except KeyError as e:
-            print(f"Ошибка: отсутствует ключ {e} в задаче. Задача будет пропущена.")
-            return None
+
 
 
 # Главное окно приложения
 class OrganizerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-
+        self.tasks_db = TASKS_DB
         # Настройки главного окна
         self.title("Органайзер")
         self.geometry("900x600")
-
-        # Загруженные задачи
-        self.tasks = {
-            date: [task for task in (Task.from_dict(task) for task in task_list) if task]
-            for date, task_list in load_tasks().items()
-        }
-
+        create_table()
         # Элементы интерфейса
         self.create_interface()
 
@@ -103,12 +105,11 @@ class OrganizerApp(ctk.CTk):
         selected_date = self.calendar.get_date()
         self.task_listbox.configure(state="normal")
         self.task_listbox.delete("1.0", "end")
-
-        if selected_date in self.tasks:
-            for i, task in enumerate(self.tasks[selected_date]):
-                self.task_listbox.insert("end", f"{i + 1}. {task.start_time}-{task.end_time}: {task.name}\n")
-
+        for i, task in enumerate(get_tasks_by_date(selected_date)):
+            self.task_listbox.insert("end", f"{i + 1}. {task.start_time}-{task.end_time}: {task.name}\n")
         self.task_listbox.configure(state="disabled")
+
+
 
     def open_task_editor(self, event):
         try:
@@ -121,123 +122,9 @@ class OrganizerApp(ctk.CTk):
             print("Ошибка при открытии задачи:", e)
 
     def open_add_task_window(self):
-        AddTaskWindow(self)
-
-    def save_all_tasks(self):
-        serialized_tasks = {date: [task.to_dict() for task in task_list] for date, task_list in self.tasks.items()}
-        save_tasks(serialized_tasks)
+        TaskWindow(self)
 
 
-# Окно добавления задачи
-class AddTaskWindow(ctk.CTkToplevel):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        self.parent = parent
-        self.title("Добавить задачу")
-        self.geometry("400x400")
-
-        # Поля для ввода данных
-        self.name_entry = ctk.CTkEntry(self, placeholder_text="Название задачи")
-        self.name_entry.pack(pady=5, fill="x", padx=20)
-
-        self.description_entry = ctk.CTkEntry(self, placeholder_text="Описание задачи")
-        self.description_entry.pack(pady=5, fill="x", padx=20)
-
-        self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (HH:MM)")
-        self.start_time_entry.pack(pady=5, fill="x", padx=20)
-
-        self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (HH:MM)")
-        self.end_time_entry.pack(pady=5, fill="x", padx=20)
-
-        self.tags_entry = ctk.CTkEntry(self, placeholder_text="Теги (через запятую)")
-        self.tags_entry.pack(pady=5, fill="x", padx=20)
-
-        # Кнопка для сохранения задачи
-        self.save_button = ctk.CTkButton(self, text="Сохранить задачу", command=self.save_task)
-        self.save_button.pack(pady=20)
-
-    def save_task(self):
-        name = self.name_entry.get().strip()
-        description = self.description_entry.get().strip()
-        start_time = self.start_time_entry.get().strip()
-        end_time = self.end_time_entry.get().strip()
-        tags = [tag.strip() for tag in self.tags_entry.get().strip().split(",")]
-
-        if not name or not start_time or not end_time:
-            print("Ошибка: Пожалуйста, заполните обязательные поля.")
-            return
-
-        selected_date = self.parent.calendar.get_date()
-        new_task = Task(name, description, start_time, end_time, tags)
-
-        if selected_date not in self.parent.tasks:
-            self.parent.tasks[selected_date] = []
-
-        self.parent.tasks[selected_date].append(new_task)
-        self.parent.save_all_tasks()
-        self.parent.update_task_list()
-        self.destroy()
-
-
-# Окно редактирования задачи
-class EditTaskWindow(ctk.CTkToplevel):
-    def __init__(self, parent, date, task):
-        super().__init__(parent)
-
-        self.parent = parent
-        self.date = date
-        self.task = task
-        self.title("Редактировать задачу")
-        self.geometry("400x400")
-
-        # Поля для редактирования данных
-        self.name_entry = ctk.CTkEntry(self, placeholder_text="Название задачи")
-        self.name_entry.insert(0, task.name)
-        self.name_entry.pack(pady=5, fill="x", padx=20)
-
-        self.description_entry = ctk.CTkEntry(self, placeholder_text="Описание задачи")
-        self.description_entry.insert(0, task.description)
-        self.description_entry.pack(pady=5, fill="x", padx=20)
-
-        self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (HH:MM)")
-        self.start_time_entry.insert(0, task.start_time)
-        self.start_time_entry.pack(pady=5, fill="x", padx=20)
-
-        self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (HH:MM)")
-        self.end_time_entry.insert(0, task.end_time)
-        self.end_time_entry.pack(pady=5, fill="x", padx=20)
-
-        self.tags_entry = ctk.CTkEntry(self, placeholder_text="Теги (через запятую)")
-        self.tags_entry.insert(0, ",".join(task.tags))
-        self.tags_entry.pack(pady=5, fill="x", padx=20)
-
-        # Кнопки для сохранения или удаления задачи
-        self.save_button = ctk.CTkButton(self, text="Сохранить изменения", command=self.save_task)
-        self.save_button.pack(pady=10)
-
-        self.delete_button = ctk.CTkButton(self, text="Удалить задачу", fg_color="red", command=self.delete_task)
-        self.delete_button.pack(pady=10)
-
-    def save_task(self):
-        self.task.name = self.name_entry.get().strip()
-        self.task.description = self.description_entry.get().strip()
-        self.task.start_time = self.start_time_entry.get().strip()
-        self.task.end_time = self.end_time_entry.get().strip()
-        self.task.tags = [tag.strip() for tag in self.tags_entry.get().strip().split(",")]
-
-        self.parent.save_all_tasks()
-        self.parent.update_task_list()
-        self.destroy()
-
-    def delete_task(self):
-        self.parent.tasks[self.date].remove(self.task)
-        if not self.parent.tasks[self.date]:
-            del self.parent.tasks[self.date]
-
-        self.parent.save_all_tasks()
-        self.parent.update_task_list()
-        self.destroy()
 
 
 # Запуск приложения
