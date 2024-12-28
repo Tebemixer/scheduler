@@ -1,5 +1,6 @@
 class Task:
-    def __init__(self, name, description, start_time, end_time, date, tags):
+    def __init__(self, name, description, start_time, end_time, date, tags, id=0):
+        self.id = id
         self.name = name
         self.description = description
         self.start_time = start_time
@@ -9,6 +10,7 @@ class Task:
 
     def to_dict(self):
         return {
+            "id": self.id,
             "name": self.name,
             "description": self.description,
             "start_time": self.start_time,
@@ -21,12 +23,13 @@ class Task:
     def from_dict(data):
         try:
             return Task(
+                data['id'],
                 data["name"],
                 data.get("description", ""),
                 data["start_time"],
                 data["end_time"],
                 data["date"],
-                data.get("tags", []),
+                data['tags'],
             )
         except KeyError as e:
             print(f"Ошибка: отсутствует ключ {e} в задаче. Задача будет пропущена.")

@@ -1,38 +1,43 @@
 import customtkinter as ctk
-
+import sqlite3
+from error_window import show_error_popup
 class EditTaskWindow(ctk.CTkToplevel):
-    def __init__(self, parent, date, task):
+    def __init__(self, parent, task):
         super().__init__(parent)
 
         self.parent = parent
-        self.date = date
         self.task = task
         self.title("Редактировать задачу")
         self.geometry("400x400")
 
         # Поля для редактирования данных
         self.name_entry = ctk.CTkEntry(self, placeholder_text="Название задачи")
-        self.name_entry.insert(0, task.name)
+        if task.name:
+            self.name_entry.insert(0, task.name)
         self.name_entry.pack(pady=5, fill="x", padx=20)
 
         self.description_entry = ctk.CTkEntry(self, placeholder_text="Описание задачи")
-        self.description_entry.insert(0, task.description)
+        if task.description:
+            self.description_entry.insert(0, task.description)
         self.description_entry.pack(pady=5, fill="x", padx=20)
 
         self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (HH:MM)")
-        self.start_time_entry.insert(0, task.start_time)
+        if task.start_time:
+            self.start_time_entry.insert(0, task.start_time)
         self.start_time_entry.pack(pady=5, fill="x", padx=20)
 
         self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (HH:MM)")
-        self.end_time_entry.insert(0, task.end_time)
+        if task.end_time:
+            self.end_time_entry.insert(0, task.end_time)
         self.end_time_entry.pack(pady=5, fill="x", padx=20)
 
         self.tags_entry = ctk.CTkEntry(self, placeholder_text="Теги (через запятую)")
-        self.tags_entry.insert(0, ",".join(task.tags))
+        if task.tags:
+            self.tags_entry.insert(0, task.tags)
         self.tags_entry.pack(pady=5, fill="x", padx=20)
 
         # Кнопки для сохранения или удаления задачи
-        self.save_button = ctk.CTkButton(self, text="Сохранить изменения", command=self.save_task)
+        self.save_button = ctk.CTkButton(self, text="Сохранить изменения", command=self.update_task)
         self.save_button.pack(pady=10)
 
         self.delete_button = ctk.CTkButton(self, text="Удалить задачу", fg_color="red", command=self.delete_task)
@@ -40,26 +45,40 @@ class EditTaskWindow(ctk.CTkToplevel):
 
 
 
-    def save_task(self):
+    def update_task(self):
         self.task.name = self.name_entry.get().strip()
         self.task.description = self.description_entry.get().strip()
         self.task.start_time = self.start_time_entry.get().strip()
         self.task.end_time = self.end_time_entry.get().strip()
-        self.task.tags = [tag.strip() for tag in self.tags_entry.get().strip().split(",")]
+        self.task.tags = self.tags_entry.get().strip()
 
-        self.save_all_tasks()
+        if not self.task.name:
+            show_error_popup("Для создания задачи необходимо имя")
+            return
+
+        connection = sqlite3.connect(self.parent.tasks_db)
+        cursor = connection.cursor()
+
+        cursor.execute('UPDATE tasks SET name = ?, description = ?, start_time = ?, end_time =?, tags=? WHERE id = ?',
+                       (self.task.name, self.task.description, self.task.start_time, self.task.end_time, self.task.tags, self.task.id)
+                       )
+
+        # Сохраняем изменения и закрываем соединение
+        connection.commit()
+        connection.close()
         self.parent.update_task_list()
         self.destroy()
 
     def delete_task(self):
-        self.parent.tasks[self.date].remove(self.task)
-        if not self.parent.tasks[self.date]:
-            del self.parent.tasks[self.date]
+        connection = sqlite3.connect(self.parent.tasks_db)
+        cursor = connection.cursor()
 
-        self.parent.save_all_tasks()
+        cursor.execute('DELETE FROM tasks WHERE id = ?', (self.task.id,))
+
+        # Сохраняем изменения и закрываем соединение
+        connection.commit()
+        connection.close()
+
         self.parent.update_task_list()
         self.destroy()
 
-    def save_all_tasks(self):
-        serialized_tasks = {date: [task.to_dict() for task in task_list] for date, task_list in self.tasks.items()}
-        self.save_tasks(serialized_tasks)

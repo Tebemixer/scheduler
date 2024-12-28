@@ -41,7 +41,7 @@ def get_tasks_by_date(date):
     conn = sqlite3.connect(TASKS_DB)
     cursor = conn.cursor()
     query = """
-        SELECT name, description, start_time, end_time, date, tags
+        SELECT name, description, start_time, end_time, date, tags , id
         FROM tasks
         WHERE date = ?
     """
@@ -51,30 +51,16 @@ def get_tasks_by_date(date):
 
     tasks = []
     for row in rows:
-        task = Task(
-            name=row[0],
-            description=row[1],
-            start_time=row[2],
-            end_time=row[3],
-            date=row[4],
-            tags=row[5].split(",") if row[5] else []
-        )
+        task = Task(*row)
         tasks.append(task)
     return tasks
-
-
-
-
-
-
-
-
 
 # Главное окно приложения
 class OrganizerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.tasks_db = TASKS_DB
+        self.cur_tasks = []
         # Настройки главного окна
         self.title("Органайзер")
         self.geometry("900x600")
@@ -107,6 +93,7 @@ class OrganizerApp(ctk.CTk):
         self.task_listbox.delete("1.0", "end")
         for i, task in enumerate(get_tasks_by_date(selected_date)):
             self.task_listbox.insert("end", f"{i + 1}. {task.start_time}-{task.end_time}: {task.name}\n")
+            self.cur_tasks.append(task)
         self.task_listbox.configure(state="disabled")
 
 
@@ -115,9 +102,8 @@ class OrganizerApp(ctk.CTk):
         try:
             selected_date = self.calendar.get_date()
             index = int(self.task_listbox.index("@%d,%d" % (event.x, event.y)).split(".")[0]) - 1
-            if selected_date in self.tasks and 0 <= index < len(self.tasks[selected_date]):
-                task = self.tasks[selected_date][index]
-                EditTaskWindow(self, selected_date, task)
+            task = self.cur_tasks[index]
+            EditTaskWindow(self, task)
         except Exception as e:
             print("Ошибка при открытии задачи:", e)
 

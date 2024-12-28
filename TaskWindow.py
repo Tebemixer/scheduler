@@ -1,7 +1,6 @@
 import sqlite3
 from error_window import show_error_popup
 import customtkinter as ctk
-import json
 from Task import Task
 class TaskWindow(ctk.CTkToplevel):
 
@@ -38,22 +37,17 @@ class TaskWindow(ctk.CTkToplevel):
         start_time = self.start_time_entry.get().strip()
         end_time = self.end_time_entry.get().strip()
         date = self.parent.calendar.get_date()
-        tags = [tag.strip() for tag in self.tags_entry.get().strip().split(",")]
+        tags = self.tags_entry.get().strip()
         if not name:
             show_error_popup("Для создания задачи необходимо имя")
             return
-
-        selected_date = self.parent.calendar.get_date()
         task = Task(name, description, start_time, end_time, date, tags)
-
-
-
-        conn = sqlite3.connect("tasks.db")
+        conn = sqlite3.connect(self.parent.tasks_db)
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO tasks (name, description, start_time, end_time, date, tags)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (task.name, task.description, task.start_time, task.end_time, task.date, ",".join(task.tags)))
+        """, (task.name, task.description, task.start_time, task.end_time, task.date, task.tags))
         conn.commit()
         conn.close()
 
