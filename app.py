@@ -1,10 +1,13 @@
 import customtkinter as ctk
 from tkcalendar import Calendar
-
-from Task import Task
+import os
+import json
 from TaskWindow import TaskWindow
 from EditTaskWindow import EditTaskWindow
 import sqlite3
+import threading
+from others import get_tasks_by_date
+import time
 from datetime import datetime
 # Настройка глобальных параметров CustomTkinter
 ctk.set_appearance_mode("System")  # Темный/светлый режим
@@ -12,54 +15,15 @@ ctk.set_default_color_theme("blue")  # Цветовая тема
 
 
 TASKS_DB = "tasks.db"
+CONFIG_FILE = "config.json"
 
-def create_table():
-    conn = sqlite3.connect(TASKS_DB)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT, 
-            start_time TEXT,
-            end_time TEXT,
-            date TEXT NOT NULL,
-            tags TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-def get_tasks_by_date(date):
-    """
-    Извлекает задачи из базы данных, относящиеся к определённой дате.
-
-    :param date: Дата в формате "YYYY-MM-DD".
-    :return: Список объектов Task, относящихся к указанной дате.
-    """
-    conn = sqlite3.connect(TASKS_DB)
-    cursor = conn.cursor()
-    query = """
-        SELECT name, description, start_time, end_time, date, tags , id
-        FROM tasks
-        WHERE date = ?
-    """
-    cursor.execute(query, (date,))
-    rows = cursor.fetchall()
-    conn.close()
-
-    tasks = []
-    for row in rows:
-        task = Task(*row)
-        tasks.append(task)
-    return tasks
 
 # Главное окно приложения
 class OrganizerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.tasks_db = TASKS_DB
+        self.config_file = CONFIG_FILE
         self.cur_tasks = []
         # Настройки главного окна
         self.title("Органайзер")
@@ -67,6 +31,7 @@ class OrganizerApp(ctk.CTk):
         create_table()
         # Элементы интерфейса
         self.create_interface()
+        self.today_task = []
 
     def create_interface(self):
         # Календарь
@@ -86,16 +51,48 @@ class OrganizerApp(ctk.CTk):
 
         # Инициализация задач для текущей даты
         self.update_task_list()
+        self.today_task = get_tasks_by_date(self.calendar.get_date(),self.tasks_db)
+
+        # Чекбокс для включения/выключения уведомлений
+        self.notifications_enabled = ctk.BooleanVar()
+        self.load_config()
+        self.checkbox = ctk.CTkCheckBox(
+            self,
+            text="Включить уведомления",
+            variable=self.notifications_enabled,
+            command=self.save_config,
+            onvalue=True,
+            offvalue=False
+        )
+        self.checkbox.pack(pady=20)
+
+        self.check_thread = threading.Thread(target=self.check_time, daemon=True)
+        self.check_thread.start()
 
     def update_task_list(self, event=None):
         selected_date = self.calendar.get_date()
         self.task_listbox.configure(state="normal")
         self.task_listbox.delete("1.0", "end")
-        for i, task in enumerate(get_tasks_by_date(selected_date)):
+        for i, task in enumerate(get_tasks_by_date(selected_date,self.tasks_db)):
             self.task_listbox.insert("end", f"{i + 1}. {task.start_time}-{task.end_time}: {task.name}\n")
             self.cur_tasks.append(task)
         self.task_listbox.configure(state="disabled")
 
+    def load_config(self):
+        if os.path.exists(self.config_file):
+            with open(self.config_file, "r") as f:
+                config = json.load(f)
+                self.notifications_enabled.set(config.get("notifications_enabled", True))
+
+    def save_config(self):
+        config = {
+            "notifications_enabled": self.notifications_enabled.get()
+        }
+        with open(self.config_file, "w") as f:
+            json.dump(config, f)
+        if self.notifications_enabled.get():
+            self.check_thread = threading.Thread(target=self.check_time, daemon=True)
+            self.check_thread.start()
 
 
     def open_task_editor(self, event):
@@ -110,10 +107,59 @@ class OrganizerApp(ctk.CTk):
     def open_add_task_window(self):
         TaskWindow(self)
 
+    def check_time(self):
+        while self.notifications_enabled.get():
+            self.today_task = get_tasks_by_date(datetime.today().strftime("%Y-%m-%d"),self.tasks_db)
+            now = datetime.now().strftime("%H:%M")
+            for task in self.today_task:
+                if now == task.start_time and not (task.done):
+                    if self.notifications_enabled.get():  # Уведомления включены
+                        self.show_notification(task)
+
+                        connection = sqlite3.connect(self.tasks_db)
+                        cursor = connection.cursor()
+                        cursor.execute(
+                            'UPDATE tasks SET done = ? WHERE id = ?',
+                            (
+                                1,
+                                task.id,
+                            )
+                        )
+                        connection.commit()
+                        connection.close()
+            time.sleep(5)
+
+    def show_notification(self, task):
+        notification_window = ctk.CTkToplevel(self)
+        notification_window.title("Напоминание")
+        notification_window.geometry("300x150")
+        text=f"{task.name}\n{task.description}\n{task.start_time}-{task.end_time}\n{task.tags}"
+        label = ctk.CTkLabel(notification_window, text=text, font=("Arial", 14))
+        label.pack(pady=20)
+
+        close_button = ctk.CTkButton(notification_window, text="Закрыть", command=notification_window.destroy)
+        close_button.pack(pady=10)
 
 
+def create_table():
+    conn = sqlite3.connect(TASKS_DB)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT, 
+            start_time TEXT,
+            end_time TEXT,
+            date TEXT NOT NULL,
+            tags TEXT,
+            done INTEGER NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
-# Запуск приложения
+
 if __name__ == "__main__":
     app = OrganizerApp()
     app.mainloop()

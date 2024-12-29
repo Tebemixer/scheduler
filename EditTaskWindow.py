@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import sqlite3
-from error_window import show_error_popup
+from others import show_error_popup
 class EditTaskWindow(ctk.CTkToplevel):
     def __init__(self, parent, task):
         super().__init__(parent)
@@ -36,6 +36,18 @@ class EditTaskWindow(ctk.CTkToplevel):
             self.tags_entry.insert(0, task.tags)
         self.tags_entry.pack(pady=5, fill="x", padx=20)
 
+        # Чекбокс для включения/выключения уведомлений
+
+        self.done_status = ctk.IntVar(value=task.done)
+        self.checkbox = ctk.CTkCheckBox(
+            self,
+            text="Выполнено",
+            variable=self.done_status,
+            onvalue=1,
+            offvalue=0
+        )
+        self.checkbox.pack(pady=20)
+
         # Кнопки для сохранения или удаления задачи
         self.save_button = ctk.CTkButton(self, text="Сохранить изменения", command=self.update_task)
         self.save_button.pack(pady=10)
@@ -51,6 +63,7 @@ class EditTaskWindow(ctk.CTkToplevel):
         self.task.start_time = self.start_time_entry.get().strip()
         self.task.end_time = self.end_time_entry.get().strip()
         self.task.tags = self.tags_entry.get().strip()
+        self.task.done = self.done_status.get()
 
         if not self.task.name:
             show_error_popup("Для создания задачи необходимо имя")
@@ -59,8 +72,8 @@ class EditTaskWindow(ctk.CTkToplevel):
         connection = sqlite3.connect(self.parent.tasks_db)
         cursor = connection.cursor()
 
-        cursor.execute('UPDATE tasks SET name = ?, description = ?, start_time = ?, end_time =?, tags=? WHERE id = ?',
-                       (self.task.name, self.task.description, self.task.start_time, self.task.end_time, self.task.tags, self.task.id)
+        cursor.execute('UPDATE tasks SET name = ?, description = ?, start_time = ?, end_time =?, tags=?, done=? WHERE id = ?',
+                       (self.task.name, self.task.description, self.task.start_time, self.task.end_time, self.task.tags, self.task.done, self.task.id)
                        )
 
         # Сохраняем изменения и закрываем соединение
@@ -74,7 +87,7 @@ class EditTaskWindow(ctk.CTkToplevel):
         cursor = connection.cursor()
 
         cursor.execute('DELETE FROM tasks WHERE id = ?', (self.task.id,))
-
+        print(f"Удалена задача с id {self.task.id}")
         # Сохраняем изменения и закрываем соединение
         connection.commit()
         connection.close()

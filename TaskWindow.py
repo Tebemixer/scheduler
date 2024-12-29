@@ -1,9 +1,9 @@
 import sqlite3
-from error_window import show_error_popup
+from others import show_error_popup
 import customtkinter as ctk
 from Task import Task
-class TaskWindow(ctk.CTkToplevel):
 
+class TaskWindow(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -41,13 +41,13 @@ class TaskWindow(ctk.CTkToplevel):
         if not name:
             show_error_popup("Для создания задачи необходимо имя")
             return
-        task = Task(name, description, start_time, end_time, date, tags)
+        task = Task(name, description, start_time, end_time, date, tags, done=0)
         conn = sqlite3.connect(self.parent.tasks_db)
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO tasks (name, description, start_time, end_time, date, tags)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (task.name, task.description, task.start_time, task.end_time, task.date, task.tags))
+            INSERT INTO tasks (name, description, start_time, end_time, date, tags, done)
+            VALUES (?, ?, ?, ?, ?, ?,?)
+        """, (task.name, task.description, task.start_time, task.end_time, task.date, task.tags, task.done))
         conn.commit()
         conn.close()
 
