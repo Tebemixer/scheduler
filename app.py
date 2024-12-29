@@ -16,7 +16,7 @@ ctk.set_default_color_theme("blue")  # Цветовая тема
 
 TASKS_DB = "tasks.db"
 CONFIG_FILE = "config.json"
-
+DATE_FORMAT = "%y-%m-%d %H:%M"
 
 # Главное окно приложения
 class OrganizerApp(ctk.CTk):
@@ -24,6 +24,7 @@ class OrganizerApp(ctk.CTk):
         super().__init__()
         self.tasks_db = TASKS_DB
         self.config_file = CONFIG_FILE
+        self.date_format = DATE_FORMAT
         self.cur_tasks = []
         # Настройки главного окна
         self.title("Органайзер")
@@ -41,14 +42,14 @@ class OrganizerApp(ctk.CTk):
 
 
         # Календарь
-        self.calendar = Calendar(self, selectmode="day", date_pattern="yyyy-mm-dd", locale='ru')
+        self.calendar = Calendar(self, selectmode="day", date_pattern="yy-mm-dd", locale='ru')
         self.calendar.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
         self.calendar.bind("<<CalendarSelected>>", self.update_task_list)
 
         # Список задач
         self.task_listbox = ctk.CTkTextbox(self, width=400)
         self.task_listbox.configure(state="normal")  # Отключим прямое редактирование
-        self.task_listbox.bind("<Double-1>", self.open_task_editor)  # Обработчик двойного клика
+        self.task_listbox.bind("<Double-1>", command = self.open_task_editor)  # Обработчик двойного клика
         self.task_listbox.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         # Кнопка для добавления задачи
@@ -75,11 +76,14 @@ class OrganizerApp(ctk.CTk):
         self.check_thread.start()
 
     def update_task_list(self, event=None):
+        self.cur_tasks =[]
         selected_date = self.calendar.get_date()
         self.task_listbox.configure(state="normal")
         self.task_listbox.delete("1.0", "end")
         for i, task in enumerate(get_tasks_by_date(selected_date,self.tasks_db)):
-            self.task_listbox.insert("end", f"{i + 1}. {task.start_time}-{task.end_time}: {task.name}\n")
+            status_marker = "[✔] " if task.done == 1 else ""
+            task_text = f"{i + 1}. {status_marker}{task.start_time}-{task.end_time}: {task.name}\n"
+            self.task_listbox.insert("end", task_text)
             self.cur_tasks.append(task)
         self.task_listbox.configure(state="disabled")
 
@@ -114,17 +118,17 @@ class OrganizerApp(ctk.CTk):
 
     def check_time(self):
         while self.notifications_enabled.get():
-            self.today_task = get_tasks_by_date(datetime.today().strftime("%Y-%m-%d"),self.tasks_db)
-            now = datetime.now().strftime("%H:%M")
+            self.today_task = get_tasks_by_date(datetime.today().strftime("%y-%m-%d"), self.tasks_db)
+            now = datetime.now()
             for task in self.today_task:
-                if (task.start_time <= now <= task.end_time) and not task.done:
+                if (now >= datetime.strptime(task.date_notif,self.date_format)) and not task.notified:
                     if self.notifications_enabled.get():  # Уведомления включены
                         self.show_notification(task)
 
                         connection = sqlite3.connect(self.tasks_db)
                         cursor = connection.cursor()
                         cursor.execute(
-                            'UPDATE tasks SET done = ? WHERE id = ?',
+                            'UPDATE tasks SET notified = ? WHERE id = ?',
                             (
                                 1,
                                 task.id,
@@ -158,7 +162,9 @@ def create_table():
             end_time TEXT,
             date TEXT NOT NULL,
             tags TEXT,
-            done INTEGER NOT NULL
+            done INTEGER NOT NULL,
+            notified INTEGER NOT NULL,
+            date_notif TEXT NOT NULL
         )
     """)
     conn.commit()

@@ -26,7 +26,7 @@ def get_tasks_by_date(date,task_db):
     conn = sqlite3.connect(task_db)
     cursor = conn.cursor()
     query = """
-        SELECT name, description, start_time, end_time, date, tags , done, id
+        SELECT name, description, start_time, end_time, date, tags , done, notified, date_notif, id
         FROM tasks
         WHERE date = ?
     """
