@@ -3,6 +3,7 @@ from others import show_error_popup
 import customtkinter as ctk
 from Task import Task
 from datetime import datetime, timedelta
+import re
 
 
 class TaskWindow(ctk.CTkToplevel):
@@ -40,10 +41,26 @@ class TaskWindow(ctk.CTkToplevel):
     def add_task(self):
         name = self.name_entry.get().strip()
         description = self.description_entry.get().strip()
+
         start_time = self.start_time_entry.get().strip()
+        if not re.fullmatch(r"^\d{2}:\d{2}$", start_time) and start_time != '':
+            show_error_popup("Задайте время начала в формате ЧЧ:ММ")
+            return
+
         end_time = self.end_time_entry.get().strip()
+        if not re.fullmatch(r"^\d{2}:\d{2}$", end_time) and end_time != '':
+            show_error_popup("Задайте время окончания в формате ЧЧ:ММ")
+            return
+
         tags = self.tags_entry.get().strip()
+
+
+        if not re.fullmatch(r"^\d{2}:\d{2}:\d{2}$", self.date_notif_entry.get().strip()) and self.date_notif_entry.get().strip() != '':
+            show_error_popup("Задайте время напоминания перед началом события в формате ДД:ЧЧ:ММ")
+            return
         date_notif = self.get_date_notif(start_time)
+
+
         if not (len(self.date_notif_entry.get().strip())):
             notified = 1
         else:

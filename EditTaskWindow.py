@@ -2,7 +2,7 @@ import customtkinter as ctk
 import sqlite3
 from others import show_error_popup
 from datetime import datetime, timedelta
-
+import re
 class EditTaskWindow(ctk.CTkToplevel):
     def __init__(self, parent, task):
         super().__init__(parent)
@@ -68,10 +68,24 @@ class EditTaskWindow(ctk.CTkToplevel):
     def update_task(self):
         self.task.name = self.name_entry.get().strip()
         self.task.description = self.description_entry.get().strip()
+
         self.task.start_time = self.start_time_entry.get().strip()
+        if not re.fullmatch(r"^\d{2}:\d{2}$", self.task.start_time) and self.task.start_time != '':
+            show_error_popup("Задайте время начала в формате ЧЧ:ММ")
+            return
+
         self.task.end_time = self.end_time_entry.get().strip()
+        if not re.fullmatch(r"^\d{2}:\d{2}$", self.task.end_time) and self.task.end_time != '':
+            show_error_popup("Задайте время окончания в формате ЧЧ:ММ")
+            return
+
         self.task.tags = self.tags_entry.get().strip()
         self.task.done = self.done_status.get()
+
+        if not re.fullmatch(r"^\d{2}:\d{2}:\d{2}$",
+                            self.date_notif_entry.get().strip()) and self.date_notif_entry.get().strip() != '':
+            show_error_popup("Задайте время напоминания перед началом события в формате ДД:ЧЧ:ММ")
+            return
         if self.task.notified == 0 or len(self.date_notif_entry.get().strip()) != 0:
             self.task.date_notif = self.get_date_notif(self.task)
             self.task.notified = 0
