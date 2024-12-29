@@ -117,7 +117,7 @@ class OrganizerApp(ctk.CTk):
             self.today_task = get_tasks_by_date(datetime.today().strftime("%Y-%m-%d"),self.tasks_db)
             now = datetime.now().strftime("%H:%M")
             for task in self.today_task:
-                if now == task.start_time and not (task.done):
+                if (task.start_time <= now <= task.end_time) and not task.done:
                     if self.notifications_enabled.get():  # Уведомления включены
                         self.show_notification(task)
 
