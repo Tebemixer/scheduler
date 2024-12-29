@@ -21,12 +21,12 @@ class EditTaskWindow(ctk.CTkToplevel):
             self.description_entry.insert(0, task.description)
         self.description_entry.pack(pady=5, fill="x", padx=20)
 
-        self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (HH:MM)")
+        self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (ЧЧ:MM)")
         if task.start_time:
             self.start_time_entry.insert(0, task.start_time)
         self.start_time_entry.pack(pady=5, fill="x", padx=20)
 
-        self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (HH:MM)")
+        self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (ЧЧ:MM)")
         if task.end_time:
             self.end_time_entry.insert(0, task.end_time)
         self.end_time_entry.pack(pady=5, fill="x", padx=20)
@@ -66,7 +66,7 @@ class EditTaskWindow(ctk.CTkToplevel):
         self.task.done = self.done_status.get()
 
         if not self.task.name:
-            show_error_popup("Для создания задачи необходимо имя")
+            show_error_popup("Для создания задачи необходимо дать ей имя")
             return
 
         connection = sqlite3.connect(self.parent.tasks_db)

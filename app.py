@@ -34,21 +34,26 @@ class OrganizerApp(ctk.CTk):
         self.today_task = []
 
     def create_interface(self):
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+
         # Календарь
-        self.calendar = Calendar(self, selectmode="day", date_pattern="yyyy-mm-dd")
-        self.calendar.pack(side="right", fill="y", padx=20, pady=20)
+        self.calendar = Calendar(self, selectmode="day", date_pattern="yyyy-mm-dd", locale='ru')
+        self.calendar.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
         self.calendar.bind("<<CalendarSelected>>", self.update_task_list)
 
         # Список задач
         self.task_listbox = ctk.CTkTextbox(self, width=400)
         self.task_listbox.configure(state="normal")  # Отключим прямое редактирование
         self.task_listbox.bind("<Double-1>", self.open_task_editor)  # Обработчик двойного клика
-        self.task_listbox.pack(side="left", fill="both", padx=20, pady=20)
+        self.task_listbox.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         # Кнопка для добавления задачи
         self.add_task_button = ctk.CTkButton(self, text="Добавить задачу", command=self.open_add_task_window)
-        self.add_task_button.pack(side="bottom", pady=10)
-
+        self.add_task_button.grid(row=1, column=0, pady=10)
         # Инициализация задач для текущей даты
         self.update_task_list()
         self.today_task = get_tasks_by_date(self.calendar.get_date(),self.tasks_db)
@@ -64,7 +69,7 @@ class OrganizerApp(ctk.CTk):
             onvalue=True,
             offvalue=False
         )
-        self.checkbox.pack(pady=20)
+        self.checkbox.grid(row=1, column=1, pady=10)
 
         self.check_thread = threading.Thread(target=self.check_time, daemon=True)
         self.check_thread.start()

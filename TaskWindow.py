@@ -18,10 +18,10 @@ class TaskWindow(ctk.CTkToplevel):
         self.description_entry = ctk.CTkEntry(self, placeholder_text="Описание задачи")
         self.description_entry.pack(pady=5, fill="x", padx=20)
 
-        self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (HH:MM)")
+        self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (ЧЧ:MM)")
         self.start_time_entry.pack(pady=5, fill="x", padx=20)
 
-        self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (HH:MM)")
+        self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (ЧЧ:MM)")
         self.end_time_entry.pack(pady=5, fill="x", padx=20)
 
         self.tags_entry = ctk.CTkEntry(self, placeholder_text="Теги (через запятую)")
@@ -39,7 +39,7 @@ class TaskWindow(ctk.CTkToplevel):
         date = self.parent.calendar.get_date()
         tags = self.tags_entry.get().strip()
         if not name:
-            show_error_popup("Для создания задачи необходимо имя")
+            show_error_popup("Для создания задачи необходимо дать ей имя")
             return
         task = Task(name, description, start_time, end_time, date, tags, done=0)
         conn = sqlite3.connect(self.parent.tasks_db)

@@ -9,7 +9,7 @@ def show_error_popup(message):
     # Создаем окно ошибки
     error_window = ctk.CTkToplevel()
     error_window.title("Ошибка")
-    error_window.geometry("300x150")
+    error_window.geometry("320x150")
 
     # Делаем окно модальным
     error_window.grab_set()
