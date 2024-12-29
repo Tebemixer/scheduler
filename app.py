@@ -136,6 +136,7 @@ class OrganizerApp(ctk.CTk):
                         )
                         connection.commit()
                         connection.close()
+                        self.update_task_list()
             time.sleep(5)
 
     def show_notification(self, task):

@@ -34,7 +34,8 @@ class EditTaskWindow(ctk.CTkToplevel):
         self.end_time_entry.pack(pady=5, fill="x", padx=20)
 
         self.date_notif_entry = ctk.CTkEntry(self, placeholder_text="Напомнить за (ДД:ЧЧ:MM)")
-        if task.notified:
+        print(task.notified)
+        if not bool(task.notified):
             self.date_notif_entry.insert(0, self.get_what_insert_in_date_notif(task))
         self.date_notif_entry.pack(pady=5, fill="x", padx=20)
 
@@ -71,10 +72,8 @@ class EditTaskWindow(ctk.CTkToplevel):
         self.task.end_time = self.end_time_entry.get().strip()
         self.task.tags = self.tags_entry.get().strip()
         self.task.done = self.done_status.get()
-        self.task.date_notif = self.get_date_notif(self.task)
-        if self.task.date_notif == self.task.start_time+' 00:00':
-            self.task.notified = 1
-        else:
+        if self.task.notified == 0 or len(self.date_notif_entry.get().strip()) != 0:
+            self.task.date_notif = self.get_date_notif(self.task)
             self.task.notified = 0
         if not self.task.name:
             show_error_popup("Для создания задачи необходимо дать ей имя")
