@@ -160,7 +160,7 @@ class OrganizerApp(ctk.CTk):
         close_button.pack(pady=10)
 
 
-def create_table():
+def create_table() -> None:
     """Создает базу данных с таблицей tasks."""
     conn = sqlite3.connect(TASKS_DB)
     cursor = conn.cursor()
