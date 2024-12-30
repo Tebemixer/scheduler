@@ -1,5 +1,6 @@
 class Task:
-    def __init__(self, name, description, start_time, end_time, date, tags, done=0, notified=0, date_notif='', id=0):
+    def __init__(self, name: str, description: str, start_time: str, end_time: str, date: str,
+                 tags: str, done=0, notified=0, date_notif='', id=0):
         self.id = id
         self.name = name
         self.description = description
@@ -11,7 +12,8 @@ class Task:
         self.notified = notified
         self.date_notif = date_notif
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Возвращает задачу в виде словаря с ключами-атрибутами."""
         return {
             "name": self.name,
             "description": self.description,
@@ -26,10 +28,10 @@ class Task:
         }
 
     @staticmethod
-    def from_dict(data):
+    def from_dict(data: dict):
+        """Возвращает задачу из словаря."""
         try:
             return Task(
-
                 data["name"],
                 data["description"],
                 data["start_time"],
@@ -40,7 +42,6 @@ class Task:
                 data['notified'],
                 data['date_notif'],
                 data['id']
-
             )
         except KeyError as e:
             print(f"Ошибка: отсутствует ключ {e} в задаче. Задача будет пропущена.")

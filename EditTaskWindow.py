@@ -3,7 +3,11 @@ import sqlite3
 from others import show_error_popup
 from datetime import datetime, timedelta
 import re
+from Task import Task
+
 class EditTaskWindow(ctk.CTkToplevel):
+    """Окно редактирования задачи."""
+
     def __init__(self, parent, task):
         super().__init__(parent)
 
@@ -34,7 +38,6 @@ class EditTaskWindow(ctk.CTkToplevel):
         self.end_time_entry.pack(pady=5, fill="x", padx=20)
 
         self.date_notif_entry = ctk.CTkEntry(self, placeholder_text="Напомнить за (ДД:ЧЧ:MM)")
-        print(task.notified)
         if not bool(task.notified):
             self.date_notif_entry.insert(0, self.get_what_insert_in_date_notif(task))
         self.date_notif_entry.pack(pady=5, fill="x", padx=20)
@@ -43,8 +46,6 @@ class EditTaskWindow(ctk.CTkToplevel):
         if task.tags:
             self.tags_entry.insert(0, task.tags)
         self.tags_entry.pack(pady=5, fill="x", padx=20)
-
-        # Чекбокс для включения/выключения уведомлений
 
         self.done_status = ctk.IntVar(value=task.done)
         self.checkbox = ctk.CTkCheckBox(
@@ -63,9 +64,8 @@ class EditTaskWindow(ctk.CTkToplevel):
         self.delete_button = ctk.CTkButton(self, text="Удалить задачу", fg_color="red", command=self.delete_task)
         self.delete_button.pack(pady=10)
 
-
-
-    def update_task(self):
+    def update_task(self) -> None:
+        """Обновляет задачу в БД."""
         self.task.name = self.name_entry.get().strip()
         self.task.description = self.description_entry.get().strip()
 
@@ -98,67 +98,51 @@ class EditTaskWindow(ctk.CTkToplevel):
 
         cursor.execute('UPDATE tasks SET name = ?, description = ?, start_time = ?, end_time =?, tags=?, done=?, '
                        'notified=?, date_notif=?  WHERE id = ?',
-                       (self.task.name, self.task.description, self.task.start_time, self.task.end_time, self.task.tags, self.task.done, self.task.notified, self.task.date_notif, self.task.id)
+                       (self.task.name, self.task.description, self.task.start_time, self.task.end_time, self.task.tags,
+                        self.task.done, self.task.notified, self.task.date_notif, self.task.id)
                        )
-
-        # Сохраняем изменения и закрываем соединение
         connection.commit()
         connection.close()
         self.parent.update_task_list()
         self.destroy()
 
-    def delete_task(self):
+    def delete_task(self) -> None:
+        """Удаляет задачу из БД."""
         connection = sqlite3.connect(self.parent.tasks_db)
         cursor = connection.cursor()
-
         cursor.execute('DELETE FROM tasks WHERE id = ?', (self.task.id,))
         print(f"Удалена задача с id {self.task.id}")
-        # Сохраняем изменения и закрываем соединение
         connection.commit()
         connection.close()
-
         self.parent.update_task_list()
         self.destroy()
 
-    def get_what_insert_in_date_notif(self, task):
+    def get_what_insert_in_date_notif(self, task: Task) -> str:
+        """Вычисляет вставку в поле времени для уведомления."""
         if task.start_time:
             dt1 = datetime.strptime(task.date + ' ' + task.start_time, self.parent.date_format)
         else:
             dt1 = datetime.strptime(task.date + '00:00', self.parent.date_format)
         dt2 = datetime.strptime(task.date_notif, self.parent.date_format)
         delta = dt1 - dt2
-
-        # Получение дней, часов и минут из разницы
         total_seconds = delta.total_seconds()
-        days = int(total_seconds // 86400)  # Секунды в сутках
-        hours = int((total_seconds % 86400) // 3600)  # Оставшиеся секунды переводим в часы
-        minutes = int((total_seconds % 3600) // 60)  # Оставшиеся секунды переводим в минуты
-
-        # Результат в формате DD:HH:MM
+        days = int(total_seconds // 86400)
+        hours = int((total_seconds % 86400) // 3600)
+        minutes = int((total_seconds % 3600) // 60)
         result = f"{days:02}:{hours:02}:{minutes:02}"
-
         return result
 
-    def get_date_notif(self, task):
-        # Преобразование строки даты в объект datetime
+    def get_date_notif(self, task: Task) -> str:
+        """Вычисляет вставку в поле времени для уведомления."""
         if len(task.start_time):
             initial_date = self.task.date + ' ' + task.start_time
         else:
             initial_date = self.task.date + ' 00:00'
-
-        # Преобразование строки даты в объект datetime
         base_date = datetime.strptime(initial_date, self.parent.date_format)
         if len(self.date_notif_entry.get().strip()):
-            # Разделение интервала на дни, часы и минуты
             days, hours, minutes = map(int, self.date_notif_entry.get().strip().split(":"))
-
-            # Создание объекта timedelta
             time_delta = timedelta(days=days, hours=hours, minutes=minutes)
-
             date_notif = base_date - time_delta
-
             return date_notif.strftime(self.parent.date_format)
         else:
             return initial_date
-
-

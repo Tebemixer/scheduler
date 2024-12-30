@@ -7,6 +7,7 @@ import re
 
 
 class TaskWindow(ctk.CTkToplevel):
+    """Окно создание задачи."""
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -38,7 +39,8 @@ class TaskWindow(ctk.CTkToplevel):
         self.save_button = ctk.CTkButton(self, text="Сохранить задачу", command=self.add_task)
         self.save_button.pack(pady=20)
 
-    def add_task(self):
+    def add_task(self) -> None:
+        """Добавляет задачу в базу данных."""
         name = self.name_entry.get().strip()
         description = self.description_entry.get().strip()
 
@@ -54,12 +56,11 @@ class TaskWindow(ctk.CTkToplevel):
 
         tags = self.tags_entry.get().strip()
 
-
-        if not re.fullmatch(r"^\d{2}:\d{2}:\d{2}$", self.date_notif_entry.get().strip()) and self.date_notif_entry.get().strip() != '':
+        date_notif = self.date_notif_entry.get().strip()
+        if not re.fullmatch(r"^\d{2}:\d{2}:\d{2}$", date_notif) and date_notif != '':
             show_error_popup("Задайте время напоминания перед началом события в формате ДД:ЧЧ:ММ")
             return
         date_notif = self.get_date_notif(start_time)
-
 
         if not (len(self.date_notif_entry.get().strip())):
             notified = 1
@@ -85,24 +86,18 @@ class TaskWindow(ctk.CTkToplevel):
         self.parent.update_task_list()
         self.destroy()
 
-    def get_date_notif(self, start_time=None):
-        # Преобразование строки даты в объект datetime
+    def get_date_notif(self, start_time=None) -> str:
+        """Вычисляет date_notif для task перед добавлением в БД."""
         if len(start_time):
             initial_date = self.date + ' ' + start_time
         else:
             initial_date = self.date + ' 00:00'
 
-        # Преобразование строки даты в объект datetime
         base_date = datetime.strptime(initial_date, self.parent.date_format)
         if len(self.date_notif_entry.get().strip()):
-            # Разделение интервала на дни, часы и минуты
             days, hours, minutes = map(int, self.date_notif_entry.get().strip().split(":"))
-
-            # Создание объекта timedelta
             time_delta = timedelta(days=days, hours=hours, minutes=minutes)
-
             date_notif = (base_date - time_delta).strftime(self.parent.date_format)
-
             return date_notif
         else:
             return initial_date
