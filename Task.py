@@ -1,3 +1,7 @@
+import logging
+
+logging.basicConfig(level=logging.ERROR)
+
 class Task:
     def __init__(self, name: str, description: str, start_time: str, end_time: str, date: str,
                  tags: str, done=0, notified=0, date_notif='', id=0):
@@ -44,5 +48,5 @@ class Task:
                 data['id']
             )
         except KeyError as e:
-            print(f"Ошибка: отсутствует ключ {e} в задаче. Задача будет пропущена.")
+            logging.error(f"Ошибка: отсутствует ключ {e} в задаче. Задача будет пропущена.")
             return None
