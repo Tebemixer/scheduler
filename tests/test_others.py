@@ -21,7 +21,5 @@ class TestUtilityFunctions(unittest.TestCase):
         mock_window.grab_set.assert_called_once()
 
 
-
-
 if __name__ == "__main__":
     unittest.main()
