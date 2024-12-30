@@ -120,7 +120,7 @@ class OrganizerApp(ctk.CTk):
         except Exception as e:
             print("Ошибка при открытии задачи:", e)
 
-    def open_add_task_window(self):
+    def open_add_task_window(self) -> None:
         """Открывает окно "Добавить задачу"."""
         TaskWindow(self)
 

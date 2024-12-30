@@ -29,7 +29,7 @@ class Task:
 
     @staticmethod
     def from_dict(data: dict):
-        """Возвращает задачу из словаря."""
+        """Возвращает задачу с параметрами из словаря."""
         try:
             return Task(
                 data["name"],

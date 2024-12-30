@@ -133,7 +133,7 @@ class EditTaskWindow(ctk.CTkToplevel):
         return result
 
     def get_date_notif(self, task: Task) -> str:
-        """Вычисляет вставку в поле времени для уведомления."""
+        """Вычисляет date_notif для task перед добавлением в БД."""
         if len(task.start_time):
             initial_date = self.task.date + ' ' + task.start_time
         else:
