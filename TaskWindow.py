@@ -9,7 +9,7 @@ import re
 class TaskWindow(ctk.CTkToplevel):
     """Окно создание задачи."""
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__()
 
         self.parent = parent
         self.title("Добавить задачу")

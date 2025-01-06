@@ -2,8 +2,7 @@ import customtkinter as ctk
 from tkcalendar import Calendar
 import os
 import json
-from TaskWindow import TaskWindow
-from EditTaskWindow import EditTaskWindow
+from TasksWindow import AddTaskWindow, EditTaskWindow
 import sqlite3
 import threading
 from others import get_tasks_by_date
@@ -122,7 +121,7 @@ class OrganizerApp(ctk.CTk):
 
     def open_add_task_window(self) -> None:
         """Открывает окно "Добавить задачу"."""
-        TaskWindow(self)
+        AddTaskWindow(self)
 
     def check_time(self) -> None:
         """Поток для проверки необходимости отправить уведомление."""
