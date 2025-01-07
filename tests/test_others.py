@@ -5,9 +5,10 @@ from Task import Task
 
 
 class TestUtilityFunctions(unittest.TestCase):
-
+    @patch("customtkinter.CTkButton")
+    @patch("customtkinter.CTkLabel")
     @patch("customtkinter.CTkToplevel")
-    def test_show_error_popup(self, mock_toplevel):
+    def test_show_error_popup(self, mock_toplevel, mock_label, mock_button):
         """Тестирует, что окно ошибки создается корректно."""
         mock_window = MagicMock()
         mock_toplevel.return_value = mock_window

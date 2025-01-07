@@ -117,6 +117,7 @@ class AddTaskWindow(BaseTaskWindow):
         self.parent.update_task_list()
         self.destroy()
 
+
 class EditTaskWindow(BaseTaskWindow):
     """Окно редактирования задачи."""
     def __init__(self, parent, task):
