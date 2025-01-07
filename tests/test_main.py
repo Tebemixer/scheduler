@@ -1,9 +1,11 @@
+import threading
+import time
 import unittest
 from unittest.mock import patch, MagicMock, call
 from main import OrganizerApp, create_table, TASKS_DB
 import sqlite3
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from Task import Task
 
 
@@ -88,23 +90,49 @@ class TestOrganizerApp(unittest.TestCase):
         self.app.open_add_task_window()
         mock_toplevel.assert_called_once()
 
-    @patch("others.get_tasks_by_date", return_value=[
-        Task("Task1", "Desc1", "09:00", "10:00", "23-12-25", "tag1", 0, 0, "23-12-25 08:55", 1)
-    ])
-    @patch("sqlite3.connect")
-    @patch("customtkinter.CTkToplevel")
-    def test_check_time(self, mock_toplevel, mock_connect, mock_get_tasks_by_date):
-        """Тестируем проверку времени уведомлений."""
-        self.app.notifications_enabled.set(True)
+    @patch("main.get_tasks_by_date")
+    @patch("main.datetime")
+    @patch("main.OrganizerApp.show_notification")
+    @patch("main.sqlite3.connect")
+    def test_check_time(self, mock_connect, mock_show_notification, mock_datetime, mock_get_tasks_by_date):
+        """Тестируем метод check_time."""
+        now = datetime(2025, 1, 7, 9, 0, 0)
+        mock_datetime.now.return_value = now
+        mock_datetime.strptime.side_effect = datetime.strptime
+        mock_datetime.today.return_value = now
 
-        with patch("datetime.datetime") as mock_datetime:
-            mock_datetime.now.return_value = datetime.strptime("23-12-25 08:56", "%y-%m-%d %H:%M")
-            mock_datetime.today.return_value.strftime.return_value = "23-12-25"
+        task = Task(
+            name="Test Task",
+            description="Test Description",
+            start_time="09:00",
+            end_time="10:00",
+            date="25-01-07",
+            tags="tag1",
+            done=0,
+            notified=0,
+            date_notif=(now - timedelta(minutes=1)).strftime("%y-%m-%d %H:%M"),
+            id=1
+        )
+        mock_get_tasks_by_date.return_value = [task]
 
-            self.app.check_time()
-            mock_get_tasks_by_date.assert_called()
-            mock_toplevel.assert_called_once()
-            mock_connect.assert_called_once_with(TASKS_DB)
+        mock_cursor = MagicMock()
+        mock_connect.return_value.cursor.return_value = mock_cursor
+
+        self.app.notifications_enabled_flag = True  # Активируем уведомления
+        self.app.stop_check_time.clear()
+
+        thread = threading.Thread(target=self.app.check_time)
+        thread.start()
+        time.sleep(1)
+        self.app.stop_check_time.set()
+        thread.join()
+
+        mock_show_notification.assert_called_once_with(task)
+        mock_cursor.execute.assert_called_once_with(
+            'UPDATE tasks SET notified = ? WHERE id = ?',
+            (1, task.id)
+        )
+        mock_connect.return_value.commit.assert_called_once()
 
     @patch("main.ctk.CTkButton")
     @patch("main.ctk.CTkLabel")

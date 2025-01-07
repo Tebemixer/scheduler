@@ -63,6 +63,7 @@ class OrganizerApp(ctk.CTk):
         self.today_task = get_tasks_by_date(self.calendar.get_date(), self.tasks_db)
 
         # Чекбокс для включения/выключения уведомлений
+        self.notifications_enabled_flag = False
         self.notifications_enabled = ctk.BooleanVar()
         self.stop_check_time = threading.Event()
         self.load_config()
@@ -103,20 +104,17 @@ class OrganizerApp(ctk.CTk):
                     self.stop_check_time.set()
 
     def save_config(self) -> None:
-        """Сохраняет состояние флага в файл настройки, а также запускает thread проверки уведомлений, если флаг
-        включен.
-        """
-        config = {"notifications_enabled": self.notifications_enabled.get()}
+        """Сохраняет состояние флага и запускает поток проверки уведомлений."""
+        self.notifications_enabled_flag = self.notifications_enabled.get()  # Обновляем флаг
+        config = {"notifications_enabled": self.notifications_enabled_flag}
         with open(self.config_file, "w") as f:
             json.dump(config, f)
-
-        if self.notifications_enabled.get():
-            self.stop_check_time.clear()  # Сбрасываем флаг для нового потока
+        if self.notifications_enabled_flag:
+            self.stop_check_time.clear()
             self.check_thread = threading.Thread(target=self.check_time, daemon=True)
             self.check_thread.start()
         else:
-            self.stop_check_time.set()  # Устанавливаем флаг завершения
-
+            self.stop_check_time.set()
 
     def open_task_editor(self, event: Event) -> None:
         """Открывает окно редактора задач."""
@@ -133,12 +131,12 @@ class OrganizerApp(ctk.CTk):
 
     def check_time(self) -> None:
         """Поток для проверки необходимости отправить уведомление."""
-        while not self.stop_check_time.is_set():  # Проверяем флаг завершения
-            self.today_task = get_tasks_by_date(datetime.today().strftime("%y-%m-%d"), self.tasks_db)
-            now = datetime.now()
-            for task in self.today_task:
-                if (now >= datetime.strptime(task.date_notif, self.date_format)) and not task.notified:
-                    if self.notifications_enabled.get():
+        while not self.stop_check_time.is_set():
+            if self.notifications_enabled_flag:  # Используем потокобезопасный флаг
+                self.today_task = get_tasks_by_date(datetime.today().strftime("%y-%m-%d"), self.tasks_db)
+                now = datetime.now()
+                for task in self.today_task:
+                    if (now >= datetime.strptime(task.date_notif, self.date_format)) and not task.notified:
                         self.show_notification(task)
                         connection = sqlite3.connect(self.tasks_db)
                         cursor = connection.cursor()
@@ -148,7 +146,7 @@ class OrganizerApp(ctk.CTk):
                         )
                         connection.commit()
                         connection.close()
-            time.sleep(5)  # Пауза между проверками
+            time.sleep(5)
 
     def show_notification(self, task: Task) -> None:
         """Создает окно уведомления и показывает его пользователю"""
@@ -160,8 +158,6 @@ class OrganizerApp(ctk.CTk):
         label.pack(pady=20)
         close_button = ctk.CTkButton(notification_window, text="Закрыть", command=notification_window.destroy)
         close_button.pack(pady=10)
-
-
 
 
 def create_table() -> None:
