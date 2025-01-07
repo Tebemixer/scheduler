@@ -4,7 +4,7 @@ from Task import Task
 
 class TestTask(unittest.TestCase):
     def setUp(self):
-        """Создает объект Task для использования в тестах."""
+        """Тестирует объект Task для использования в тестах."""
         self.task = Task(
             name="Test Task",
             description="Test Description",
@@ -19,7 +19,7 @@ class TestTask(unittest.TestCase):
         )
 
     def test_task_initialization(self):
-        """Проверяем правильность инициализации объекта Task."""
+        """Тестирует правильность инициализации объекта Task."""
         self.assertEqual(self.task.name, "Test Task")
         self.assertEqual(self.task.description, "Test Description")
         self.assertEqual(self.task.start_time, "10:00")
@@ -32,7 +32,7 @@ class TestTask(unittest.TestCase):
         self.assertEqual(self.task.id, 42)
 
     def test_to_dict(self):
-        """Проверяем правильность преобразования задачи в словарь."""
+        """Тестирует правильность преобразования задачи в словарь."""
         task_dict = self.task.to_dict()
         expected_dict = {
             "name": "Test Task",
@@ -49,7 +49,7 @@ class TestTask(unittest.TestCase):
         self.assertEqual(task_dict, expected_dict)
 
     def test_from_dict_success(self):
-        """Проверяем создание задачи из корректного словаря."""
+        """Тестирует создание задачи из корректного словаря."""
         task_data = {
             "name": "New Task",
             "description": "New Description",
@@ -76,7 +76,7 @@ class TestTask(unittest.TestCase):
         self.assertEqual(new_task.id, 43)
 
     def test_from_dict_missing_keys(self):
-        """Проверяем обработку отсутствующих ключей в словаре."""
+        """Тестирует обработку отсутствующих ключей в словаре."""
         incomplete_task_data = {
             "name": "Incomplete Task",
             "description": "Missing some keys",
@@ -84,10 +84,10 @@ class TestTask(unittest.TestCase):
             # Отсутствуют ключи: "end_time", "date", "tags", "done", "notified", "date_notif", "id"
         }
         new_task = Task.from_dict(incomplete_task_data)
-        self.assertIsNone(new_task)  # Должно вернуть None из-за отсутствующих ключей
+        self.assertIsNone(new_task)
 
     def test_from_dict_key_error_message(self):
-        """Проверяем вывод ошибки при отсутствии ключа."""
+        """Тестирует вывод ошибки при отсутствии ключа."""
         incomplete_task_data = {
             "name": "Task",
             "description": "Some description",
@@ -97,6 +97,30 @@ class TestTask(unittest.TestCase):
             new_task = Task.from_dict(incomplete_task_data)
             self.assertIsNone(new_task)
             self.assertIn("Ошибка: отсутствует ключ 'start_time' в задаче", log.output[0])
+
+
+class TestTaskEquality(unittest.TestCase):
+    def setUp(self):
+        """Инициализирует тестовые объекты Task."""
+        self.task1 = Task("Task1", "Description1", "09:00", "10:00", "25-12-25", "tag1", 0, 0, "25-12-25 08:50", 1)
+        self.task2 = Task("Task1", "Description1", "09:00", "10:00", "25-12-25", "tag1", 0, 0, "25-12-25 08:50", 1)
+        self.task3 = Task("Task2", "Description2", "11:00", "12:00", "26-12-25", "tag2", 1, 1, "25-12-25 10:50", 2)
+
+    def test_equal_tasks(self):
+        """Тестирует, что два идентичных объекта считаются равными."""
+        self.assertEqual(self.task1, self.task2, "Идентичные задачи должны быть равны")
+
+    def test_not_equal_tasks(self):
+        """Тестирует, что два разных объекта считаются неравными."""
+        self.assertNotEqual(self.task1, self.task3, "Разные задачи не должны быть равны")
+
+    def test_comparison_with_other_type(self):
+        """Тестирует, что объект Task не равен объекту другого типа."""
+        self.assertNotEqual(self.task1, "Not a Task", "Задача не должна быть равна строке")
+
+    def test_self_equality(self):
+        """Тестирует, что объект равен самому себе."""
+        self.assertEqual(self.task1, self.task1, "Задача должна быть равна самой себе")
 
 
 if __name__ == "__main__":

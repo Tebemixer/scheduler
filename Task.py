@@ -17,6 +17,22 @@ class Task:
         self.notified = notified
         self.date_notif = date_notif
 
+    def __eq__(self, other):
+        if not isinstance(other, Task):
+            return False
+        return (
+                self.name == other.name and
+                self.description == other.description and
+                self.start_time == other.start_time and
+                self.end_time == other.end_time and
+                self.date == other.date and
+                self.tags == other.tags and
+                self.done == other.done and
+                self.notified == other.notified and
+                self.date_notif == other.date_notif and
+                self.id == other.id
+        )
+
     def to_dict(self) -> dict:
         """Возвращает задачу в виде словаря с ключами-атрибутами."""
         return {
