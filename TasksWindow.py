@@ -201,7 +201,7 @@ class EditTaskWindow(BaseTaskWindow):
         if task.start_time:
             dt1 = datetime.strptime(task.date + ' ' + task.start_time, self.parent.date_format)
         else:
-            dt1 = datetime.strptime(task.date + '00:00', self.parent.date_format)
+            dt1 = datetime.strptime(task.date + ' 00:00', self.parent.date_format)
         dt2 = datetime.strptime(task.date_notif, self.parent.date_format)
         delta = dt1 - dt2
         total_seconds = delta.total_seconds()
@@ -210,10 +210,3 @@ class EditTaskWindow(BaseTaskWindow):
         minutes = int((total_seconds % 3600) // 60)
         result = f"{days:02}:{hours:02}:{minutes:02}"
         return result
-
-
-
-
-
-
-

@@ -34,7 +34,6 @@ class TestUtilityFunctions(unittest.TestCase):
         mock_cursor.fetchall.return_value = test_rows
         mock_connect.return_value.cursor.return_value = mock_cursor
 
-        # Вызываем функцию
         result = get_tasks_by_date(test_date, "fake_tasks.db")
         executed_query, executed_params = mock_cursor.execute.call_args[0]
         expected_query = """

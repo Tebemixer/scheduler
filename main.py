@@ -10,7 +10,6 @@ import time
 from datetime import datetime
 from Task import Task
 from tkinter import Event
-from queue import Queue
 # Настройка глобальных параметров CustomTkinter
 ctk.set_appearance_mode("System")  # Темный/светлый режим
 ctk.set_default_color_theme("blue")  # Цветовая тема
@@ -105,7 +104,7 @@ class OrganizerApp(ctk.CTk):
 
     def save_config(self) -> None:
         """Сохраняет состояние флага и запускает поток проверки уведомлений."""
-        self.notifications_enabled_flag = self.notifications_enabled.get()  # Обновляем флаг
+        self.notifications_enabled_flag = self.notifications_enabled.get()
         config = {"notifications_enabled": self.notifications_enabled_flag}
         with open(self.config_file, "w") as f:
             json.dump(config, f)
@@ -132,7 +131,7 @@ class OrganizerApp(ctk.CTk):
     def check_time(self) -> None:
         """Поток для проверки необходимости отправить уведомление."""
         while not self.stop_check_time.is_set():
-            if self.notifications_enabled_flag:  # Используем потокобезопасный флаг
+            if self.notifications_enabled_flag:
                 self.today_task = get_tasks_by_date(datetime.today().strftime("%y-%m-%d"), self.tasks_db)
                 now = datetime.now()
                 for task in self.today_task:

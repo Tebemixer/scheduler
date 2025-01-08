@@ -11,7 +11,8 @@ class TestOrganizerApp(unittest.TestCase):
     def setUp(self):
         """Инициализирует тестируемый объект."""
         self.app = OrganizerApp()
-        self.app.withdraw()  # Скрываем главное окно для тестов
+        # Скрываем главное окно для тестов
+        self.app.withdraw()
 
     def tearDown(self):
         """Закрывает приложение после теста."""
@@ -108,7 +109,7 @@ class TestOrganizerApp(unittest.TestCase):
         mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
 
-        self.app.notifications_enabled_flag = True  # Активируем уведомления
+        self.app.notifications_enabled_flag = True
         self.app.stop_check_time.clear()
 
         thread = threading.Thread(target=self.app.check_time)
