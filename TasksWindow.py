@@ -34,7 +34,7 @@ class BaseTaskWindow(ctk.CTkToplevel):
         self.tags_entry.pack(pady=5, fill="x", padx=20)
 
     def get_data(self) -> Task:
-
+        """Возвращает задачу по данным из полей ввода."""
         name = self.name_entry.get().strip()
         if not name:
             raise ValueError("Для создания задачи необходимо дать ей имя")

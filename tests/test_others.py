@@ -41,7 +41,6 @@ class TestUtilityFunctions(unittest.TestCase):
                 FROM tasks
                 WHERE date = ?
             """
-        # Убираем лишние пробелы из строк перед сравнением
         self.assertEqual(" ".join(executed_query.split()), " ".join(expected_query.split()))
         self.assertEqual(executed_params, (test_date,))
 

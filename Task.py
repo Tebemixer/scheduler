@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -17,7 +18,7 @@ class Task:
         self.notified = notified
         self.date_notif = date_notif
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Task):
             return False
         return (
