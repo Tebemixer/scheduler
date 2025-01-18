@@ -1,183 +1,181 @@
 import unittest
-from lab.second import Vehicle, Driver, Route, Garage, MaintenanceStaff
-import lab.second
+import os
+from lab.third import Vehicle, Driver, Route, MaintenanceStaff, Garage, PersistenceClass
+from unittest.mock import MagicMock, patch, mock_open
+import lab.third
 
 
-class TestSecond(unittest.TestCase):
+class TestLab(unittest.TestCase):
+
+    def setUp(self):
+        """Создает тестовые объекты для каждого класса."""
+        self.vehicle = Vehicle("Bus", 1200, 50000, 3, "Diesel engine, 50 seats")
+        self.driver = Driver("Ivanov", "Ivan", "Ivanovich", 1980, 2005, 20, "Bus driver", "Male")
+        self.route = Route("Route 42", self.vehicle, self.driver, "8:00 - 20:00")
+        self.staff = MaintenanceStaff("Technician", "Petrov", "Petr", "Petrovich", 1985, 2010, 15, "Male")
+        self.garage = Garage("Main Garage", self.vehicle.get_info(), "Engine repair", "2025-01-10", "2025-01-15", "Successful", [self.staff])
 
     def tearDown(self):
-        lab.second._next_vehicle = 0
-        lab.second._next_driver = 0
-        lab.second._next_route = 0
-        lab.second._next_garage = 0
-        lab.second._next_maintenancestaff = 0
+        """Удаляет временные файлы после тестов."""
+        for file in os.listdir():
+            if file.endswith(".pkl") or file.startswith("history of change"):
+                os.remove(file)
 
-    def test_vehicle_creation_default(self):
-        # Отсутствуют ключи repairs count и characteristics
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500)
-        self.assertEqual(self.vehicle.name, "Bus")
-        self.assertEqual(self.vehicle.usage_hours, 10)
-        self.assertEqual(self.vehicle.mileage, 500)
-        self.assertEqual(self.vehicle.repairs_count, 0)
-        self.assertEqual(self.vehicle.characteristics, "")
-        self.assertEqual(self.vehicle.id, 1)
+        lab.third._next_vehicle = 0
+        lab.third._next_driver = 0
+        lab.third._next_route = 0
+        lab.third._next_garage = 0
+        lab.third._next_maintenancestaff = 0
 
-    def test_vehicle_str(self):
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500, repairs_count=2, characteristics="Large")
-        self.assertIn("Bus", str(self.vehicle))
-        self.assertIn("10", str(self.vehicle))
-        self.assertIn("500", str(self.vehicle))
-        self.assertIn("2", str(self.vehicle))
-        self.assertIn("Large", str(self.vehicle))
-        self.assertIn("'id': 1", str(self.vehicle))
+    def test_vehicle_destruction(self):
+        """Тестирует деструктор Vehicle."""
+        self.vehicle.change_history = MagicMock()
+        self.vehicle.__del__()
+        self.vehicle.change_history.clear.assert_called_once()
 
-    def test_vehicle_id_generator(self):
-        self.vehicle1 = Vehicle(name="Bus")
-        self.vehicle2 = Vehicle(name="Bike")
-        self.assertEqual(self.vehicle1.id, 1)
-        self.assertEqual(self.vehicle2.id, 2)
+    @patch("builtins.open", new_callable=mock_open)
+    def test_vehicle_transaction(self, mocked_open):
+        """Тестируем обновление информации о Vehicle."""
+        self.vehicle.update_info("Truck", 1500, 60000, 4, "Electric engine, 30 seats")
+        mocked_open.assert_called_once_with('history of change Vehicle.txt', 'a')
 
-    def test_driver_creation_default(self):
-        # Отсутствуют ключи city, address, phone
-        self.driver = Driver(last_name="Doe", first_name="John", middle_name="M", birth_year=1985, start_year=2010,
-                             experience=10, position="Driver", gender="Male")
-        self.assertEqual(self.driver.last_name, "Doe")
-        self.assertEqual(self.driver.first_name, "John")
-        self.assertEqual(self.driver.middle_name, "M")
-        self.assertEqual(self.driver.birth_year, 1985)
-        self.assertEqual(self.driver.start_year, 2010)
-        self.assertEqual(self.driver.experience, 10)
-        self.assertEqual(self.driver.position, "Driver")
-        self.assertEqual(self.driver.gender, "Male")
-        self.assertEqual(self.driver.address, "")
-        self.assertEqual(self.driver.city, "")
-        self.assertEqual(self.driver.phone, "")
-        self.assertEqual(self.driver.id, 1)
+        file_handle = mocked_open()
+        file_handle.write.assert_called_once()
 
-    def test_driver_str(self):
-        self.driver = Driver(last_name="Doe", first_name="John", middle_name="M", birth_year=1985, start_year=2010,
-                             experience=10, position="Driver", gender="Male")
-        self.assertIn("Doe John M", str(self.driver))
-        self.assertIn("1985", str(self.driver))
-        self.assertIn("10", str(self.driver))
-        self.assertIn("Driver", str(self.driver))
-        self.assertIn("Male", str(self.driver))
-        self.assertIn("'id': 1", str(self.driver))
+        written_data = file_handle.write.call_args[0][0]
+        self.assertIn("Bus->Truck", written_data)
+        self.assertIn("usage_hours:1200->1500;", written_data)
 
-    def test_driver_id_generator(self):
-        self.driver1 = Driver(last_name="Doe", first_name="John", middle_name="M", birth_year=1985, start_year=2010,
-                              experience=10, position="Driver", gender="Male")
-        self.driver2 = Driver(last_name="Joe", first_name="Ivan", middle_name="O", birth_year=1925, start_year=1980,
-                              experience=100, position="High Driver", gender="Male")
-        self.assertEqual(self.driver1.id, 1)
-        self.assertEqual(self.driver2.id, 2)
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("pickle.dump")
+    @patch("pickle.load")
+    def test_serialization_vehicle(self, mock_load, mock_dump, mocked_open):
+        """Тестирует сериализацию и десериализацию объекта Vehicle."""
+        mock_load.return_value = self.vehicle
 
-    def test_route_creation(self):
-        # Отсутствует ключ schedule
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500, repairs_count=2, characteristics="Large")
-        self.driver = Driver(last_name="Doe", first_name="John", middle_name="M", birth_year=1985, start_year=2010,
-                             experience=10, position="Driver", gender="Male")
-        self.route = Route(name="Route 1", vehicle=self.vehicle.id, driver=self.driver.id)
-        self.assertEqual(self.route.name, "Route 1")
-        self.assertEqual(self.route.vehicle, 1)
-        self.assertEqual(self.route.driver, 1)
-        self.assertEqual(self.route.schedule, "")
-        self.assertEqual(self.route.id, 1)
+        PersistenceClass.serialize(self.vehicle)
+        mocked_open.assert_called_once_with(f"Vehicle_{self.vehicle.id}.pkl", "wb")
+        mock_dump.assert_called_once_with(self.vehicle, mocked_open())
 
-    def test_route_str(self):
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500, repairs_count=2, characteristics="Large")
-        self.driver = Driver(last_name="Doe", first_name="John", middle_name="M", birth_year=1985, start_year=2010,
-                             experience=10, position="Driver", gender="Male")
-        self.route = Route(name="Route 1", vehicle=self.vehicle.id, driver=self.driver.id, schedule="8:00 AM - 5:00 PM")
-        self.assertIn("Route 1", str(self.route))
-        self.assertIn("8:00 AM - 5:00 PM", str(self.route))
-        self.assertIn("1", str(self.route))
+        loaded_vehicle = PersistenceClass.deserialize(f"Vehicle_{self.vehicle.id}.pkl")
+        mocked_open.assert_called_with(f"Vehicle_{self.vehicle.id}.pkl", "rb")
+        mock_load.assert_called_once_with(mocked_open())
+        self.assertEqual(self.vehicle.get_info(), loaded_vehicle.get_info())
 
-    def test_route_id_generator(self):
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500, repairs_count=2, characteristics="Large")
-        self.driver = Driver(last_name="Doe", first_name="John", middle_name="M", birth_year=1985, start_year=2010,
-                             experience=10, position="Driver", gender="Male")
-        self.route1 = Route(name="Route 1", vehicle=self.vehicle.id, driver=self.driver.id)
-        self.route2 = Route(name="Route 1", vehicle=self.vehicle.id, driver=self.driver.id)
-        self.assertEqual(self.route1.id, 1)
-        self.assertEqual(self.route2.id, 2)
 
-    def test_garage_creation_default(self):
-        # Отсутствует ключ repair_result и personnel
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500, repairs_count=2, characteristics="Large")
-        self.garage = Garage(name="Main Garage", vehicle=self.vehicle.id, repair_type="Engine Repair",
-                             date_received="2025-01-10", date_released="2025-01-12")
-        self.assertEqual(self.garage.name, "Main Garage")
-        self.assertEqual(self.garage.vehicle, 1)
-        self.assertEqual(self.garage.repair_type, "Engine Repair")
-        self.assertEqual(self.garage.date_received, "2025-01-10")
-        self.assertEqual(self.garage.date_released, "2025-01-12")
-        self.assertEqual(self.garage.repair_result, "")
-        self.assertEqual(self.garage.personnel, [])
-        self.assertEqual(self.garage.id, 1)
+    def test_driver_destruction(self):
+        """Тестирует деструктор Driver."""
+        self.driver.change_history = MagicMock()
+        self.driver.__del__()
+        self.driver.change_history.clear.assert_called_once()
 
-    def test_garage_str(self):
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500, repairs_count=2, characteristics="Large")
-        self.garage = Garage(name="Main Garage", vehicle=self.vehicle.id, repair_type="Engine Repair",
-                             date_received="2025-01-10", date_released="2025-01-12", repair_result="Success")
-        self.assertIn("Main Garage", str(self.garage))
-        self.assertIn("Engine Repair", str(self.garage))
-        self.assertIn("2025-01-10", str(self.garage))
-        self.assertIn("2025-01-12", str(self.garage))
-        self.assertIn("Success", str(self.garage))
-        self.assertIn("1", str(self.garage))
+    @patch("builtins.open", new_callable=mock_open)
+    def test_driver_transaction(self, mocked_open):
+        """Тестируем обновление информации о Driver."""
+        self.driver.update_info("Smirnov", "Ivan", "Ivanovich", 1980, 2005, 20, "Bus driver", "Male", '', '', '')
+        mocked_open.assert_called_once_with('history of change Driver.txt', 'a')
 
-    def test_garage_id_generator(self):
-        self.vehicle = Vehicle(name="Bus", usage_hours=10, mileage=500, repairs_count=2, characteristics="Large")
-        self.garage1 = Garage(name="Main Garage", vehicle=self.vehicle.id, repair_type="Engine Repair",
-                              date_received="2025-01-10", date_released="2025-01-12", repair_result="Success")
-        self.garage2 = Garage(name="Second Garage", vehicle=self.vehicle.id, repair_type="Engine Repair",
-                              date_received="2025-01-10", date_released="2025-01-12", repair_result="Success")
-        self.assertEqual(self.garage1.id, 1)
-        self.assertEqual(self.garage2.id, 2)
+        file_handle = mocked_open()
+        file_handle.write.assert_called_once()
 
-    def test_maintenance_staff_creation_default(self):
-        # Отсутствуют ключи city, address, phone
-        self.staff = MaintenanceStaff(position="Mechanic", last_name="Smith", first_name="Alice", middle_name="K",
-                                 birth_year=1990, start_year=2015, experience=8, gender="Female")
-        self.assertEqual(self.staff.position, "Mechanic")
-        self.assertEqual(self.staff.last_name, "Smith")
-        self.assertEqual(self.staff.first_name, "Alice")
-        self.assertEqual(self.staff.middle_name, "K")
-        self.assertEqual(self.staff.birth_year, 1990)
-        self.assertEqual(self.staff.start_year, 2015)
-        self.assertEqual(self.staff.experience, 8)
-        self.assertEqual(self.staff.gender, "Female")
-        self.assertEqual(self.staff.address, "")
-        self.assertEqual(self.staff.city, "")
-        self.assertEqual(self.staff.phone, "")
-        self.assertEqual(self.staff.id, 1)
+        written_data = file_handle.write.call_args[0][0]
+        self.assertIn("Ivanov->Smirnov", written_data)
 
-    def test_maintenance_staff_str(self):
-        self.staff = MaintenanceStaff(position="Mechanic", last_name="Smith", first_name="Alice", middle_name="K",
-                                 birth_year=1990, start_year=2015, experience=8, gender="Female",
-                                 address="123 Main St", city="Springfield", phone="555-1234")
-        self.assertIn("Mechanic", str(self.staff))
-        self.assertIn("Smith Alice K", str(self.staff))
-        self.assertIn("1990", str(self.staff))
-        self.assertIn("2015", str(self.staff))
-        self.assertIn("8", str(self.staff))
-        self.assertIn("Female", str(self.staff))
-        self.assertIn("123 Main St", str(self.staff))
-        self.assertIn("Springfield", str(self.staff))
-        self.assertIn("555-1234", str(self.staff))
-        self.assertIn("'id': 1", str(self.staff))
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("pickle.dump")
+    @patch("pickle.load")
+    def test_serialization_driver(self, mock_load, mock_dump, mocked_open):
+        """Тестирует сериализацию и десериализацию объекта Driver."""
+        mock_load.return_value = self.driver
 
-    def test_maintenance_staff_id_generator(self):
-        self.staff1 = MaintenanceStaff(position="Mechanic", last_name="Smith", first_name="Alice", middle_name="K",
-                                      birth_year=1990, start_year=2015, experience=8, gender="Female",
-                                      address="123 Main St", city="Springfield", phone="555-1234")
-        self.staff2 = MaintenanceStaff(position="High Mechanic", last_name="Biden", first_name="Joe", middle_name="Y",
-                                       birth_year=1995, start_year=2025, experience=0, gender="Male",
-                                       address="126 Main St", city="Springfield", phone="555-145")
-        self.assertEqual(self.staff1.id, 1)
-        self.assertEqual(self.staff2.id, 2)
+        PersistenceClass.serialize(self.driver)
+        mocked_open.assert_called_once_with(f"Driver_{self.driver.id}.pkl", "wb")
+        mock_dump.assert_called_once_with(self.driver, mocked_open())
 
+        loaded_driver = PersistenceClass.deserialize(f"Driver_{self.driver.id}.pkl")
+        mocked_open.assert_called_with(f"Driver_{self.driver.id}.pkl", "rb")
+        mock_load.assert_called_once_with(mocked_open())
+        self.assertEqual(self.driver.get_info(), loaded_driver.get_info())
+
+    def test_route_destruction(self):
+        """Тестирует деструктор Route."""
+        self.route.change_history = MagicMock()
+        self.route.__del__()
+        self.route.change_history.clear.assert_called_once()
+
+    @patch("builtins.open", new_callable=mock_open)
+    def test_route_transaction(self, mocked_open):
+        """Тестируем обновление информации о Route."""
+        self.route.update_info("Route 42", self.vehicle, self.driver, "12:00 - 20:00")
+        mocked_open.assert_called_once_with('history of change Route.txt', 'a')
+
+        file_handle = mocked_open()
+        file_handle.write.assert_called_once()
+
+        written_data = file_handle.write.call_args[0][0]
+        self.assertIn("8:00 - 20:00->12:00 - 20:00", written_data)
+
+    def test_maintancestaff_destruction(self):
+        """Тестирует деструктор MaintenanceStaff."""
+        self.staff.change_history = MagicMock()
+        self.staff.__del__()
+        self.staff.change_history.clear.assert_called_once()
+
+    @patch("builtins.open", new_callable=mock_open)
+    def test_maintancestaff_transaction(self, mocked_open):
+        """Тестируем обновление информации о MaintenanceStaff."""
+        self.staff.update_info("High Technician", "Petrov", "Petr", "Petrovich", 1985, 2010, 15, "Male", '', '', '')
+        mocked_open.assert_called_once_with('history of change MaintenanceStaff.txt', 'a')
+
+        file_handle = mocked_open()
+        file_handle.write.assert_called_once()
+
+        written_data = file_handle.write.call_args[0][0]
+        self.assertIn("Technician->High Technician", written_data)
+
+    def test_garage_destruction(self):
+        """Тестирует деструктор Garage."""
+        self.garage.change_history = MagicMock()
+        self.garage.__del__()
+        self.garage.change_history.clear.assert_called_once()
+
+    @patch("builtins.open", new_callable=mock_open)
+    def test_maintancestaff_transaction(self, mocked_open):
+        """Тестируем обновление информации о Garage."""
+        self.garage.update_info("Main Garage", self.vehicle.get_info(), "Engine repair", "2025-01-10", "???", "Fail", [self.staff])
+        mocked_open.assert_called_once_with('history of change Garage.txt', 'a')
+
+        file_handle = mocked_open()
+        file_handle.write.assert_called_once()
+
+        written_data = file_handle.write.call_args[0][0]
+        self.assertIn("Fail", written_data)
+        self.assertIn("???", written_data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def test_garage_update(self):
+        """Проверяем обновление информации в объекте Garage."""
+        old_repair_type = self.garage.repair_type
+        self.garage.update_info("Main Garage", self.vehicle.get_info(), "Tire replacement", "2025-01-10", "2025-01-15", "Successful", [self.staff])
+        self.assertNotEqual(self.garage.repair_type, old_repair_type)
+        self.assertEqual(self.garage.repair_type, "Tire replacement")
 
 if __name__ == "__main__":
     unittest.main()
