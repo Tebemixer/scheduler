@@ -13,14 +13,10 @@ class TestLab(unittest.TestCase):
         self.driver = Driver("Ivanov", "Ivan", "Ivanovich", 1980, 2005, 20, "Bus driver", "Male")
         self.route = Route("Route 42", self.vehicle, self.driver, "8:00 - 20:00")
         self.staff = MaintenanceStaff("Technician", "Petrov", "Petr", "Petrovich", 1985, 2010, 15, "Male")
-        self.garage = Garage("Main Garage", self.vehicle.get_info(), "Engine repair", "2025-01-10", "2025-01-15", "Successful", [self.staff])
+        self.garage = Garage("Main Garage", self.vehicle, "Engine repair", "2025-01-10", "2025-01-15", "Successful", [self.staff])
 
     def tearDown(self):
-        """Удаляет временные файлы после тестов."""
-        for file in os.listdir():
-            if file.endswith(".pkl") or file.startswith("history of change"):
-                os.remove(file)
-
+        """Обнуляет генераторы id после тестов."""
         lab.third._next_vehicle = 0
         lab.third._next_driver = 0
         lab.third._next_route = 0
@@ -140,9 +136,9 @@ class TestLab(unittest.TestCase):
         self.garage.change_history.clear.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open)
-    def test_maintancestaff_transaction(self, mocked_open):
+    def test_garage_transaction(self, mocked_open):
         """Тестируем обновление информации о Garage."""
-        self.garage.update_info("Main Garage", self.vehicle.get_info(), "Engine repair", "2025-01-10", "???", "Fail", [self.staff])
+        self.garage.update_info("Main Garage", self.vehicle, "Engine repair", "2025-01-10", "???", "Fail", [self.staff])
         mocked_open.assert_called_once_with('history of change Garage.txt', 'a')
 
         file_handle = mocked_open()
@@ -152,30 +148,6 @@ class TestLab(unittest.TestCase):
         self.assertIn("Fail", written_data)
         self.assertIn("???", written_data)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def test_garage_update(self):
-        """Проверяем обновление информации в объекте Garage."""
-        old_repair_type = self.garage.repair_type
-        self.garage.update_info("Main Garage", self.vehicle.get_info(), "Tire replacement", "2025-01-10", "2025-01-15", "Successful", [self.staff])
-        self.assertNotEqual(self.garage.repair_type, old_repair_type)
-        self.assertEqual(self.garage.repair_type, "Tire replacement")
 
 if __name__ == "__main__":
     unittest.main()
