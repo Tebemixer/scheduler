@@ -124,7 +124,8 @@ class MaintenanceStaff:
             "Phone": self.phone,
         }
 
-    def update_info(self, position, last_name, first_name, middle_name, birth_year, start_year, experience, gender, address, city, phone):
+    def update_info(self, position, last_name, first_name, middle_name, birth_year,
+                    start_year, experience, gender, address, city, phone):
         self.position = position
         self.last_name = last_name
         self.first_name = first_name
@@ -171,16 +172,22 @@ class Garage:
 
 if __name__ == '__main__':
     vehicle = Vehicle("Bus", 1200, 50000, 3, "Diesel engine, 50 seats")
-    driver = Driver("Ivanov", "Ivan", "Ivanovich", 1980, 2005, 20, "Bus driver", "Male", "Street 123", "Moscow", "+123456789")
+    driver = Driver("Ivanov", "Ivan", "Ivanovich", 1980, 2005, 20,
+                    "Bus driver", "Male", "Street 123", "Moscow", "+123456789")
+
     route = Route("Route 42", vehicle.get_info(), driver.get_info(), "8:00 - 20:00")
 
-    staff1 = MaintenanceStaff("Technician", "Petrov", "Petr", "Petrovich", 1985, 2010, 15, "Male", "Street 456", "Saint-Petersburg", "+987654321")
-    garage = Garage("Main Garage", vehicle.get_info(), "Engine repair", "2025-01-10", "2025-01-15", "Successful", [staff1])
+    staff1 = MaintenanceStaff("Technician", "Petrov", "Petr", "Petrovich", 1985, 2010, 15,
+                              "Male", "Street 456", "Saint-Petersburg", "+987654321")
+
+    garage = Garage("Main Garage", vehicle.get_info(), "Engine repair",
+                    "2025-01-10", "2025-01-15", "Successful", [staff1])
 
     print("Vehicle Info:", vehicle.get_info())
     print("Driver Info:", driver.get_info())
     print("Route Info:", route.get_info())
     print("Garage Info:", garage.get_info())
 
-    driver.update_info("Ivanov", "Ivan", "Ivanovich", 1980, 2005, 25, "Bus driver", "Male", "Street 123", "Moscow", "+88005553535")
+    driver.update_info("Ivanov", "Ivan", "Ivanovich", 1980, 2005, 25,
+                       "Bus driver", "Male", "Street 123", "Moscow", "+88005553535")
     print("New Driver Info:", driver.get_info())
