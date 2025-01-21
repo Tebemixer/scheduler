@@ -90,7 +90,7 @@ class TestEditTaskWindow(unittest.TestCase):
             date="25-12-25",
             tags="tag1,tag2",
             done=0,
-            notified=1,
+            notified=0,
             date_notif="25-12-25 08:50",
             id=1
         )
