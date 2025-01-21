@@ -30,7 +30,7 @@ class OrganizerApp(ctk.CTk):
         self.cur_tasks = []
         # Настройки главного окна
         self.title("Органайзер")
-        self.geometry("900x600")
+        self.geometry("960x540")
         create_table()
         # Элементы интерфейса
         self.create_interface()
@@ -40,8 +40,8 @@ class OrganizerApp(ctk.CTk):
         """Создает главное меню приложения."""
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=63)
+        self.grid_columnconfigure(1, weight=80)
 
         # Календарь
         self.calendar = Calendar(self, selectmode="day", date_pattern="yy-mm-dd", locale='ru')
