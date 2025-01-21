@@ -209,4 +209,7 @@ class EditTaskWindow(BaseTaskWindow):
         hours = int((total_seconds % 86400) // 3600)
         minutes = int((total_seconds % 3600) // 60)
         result = f"{days:02}:{hours:02}:{minutes:02}"
-        return result
+        if task.notified == 0:
+            return result
+        else:
+            return ''
