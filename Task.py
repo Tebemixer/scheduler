@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.ERROR)
 
 class Task:
     def __init__(self, name: str, description: str, start_time: str, end_time: str, date: str,
-                 tags: str, done=0, notified=0, date_notif='', id=0):
+                 tags: str, done: int = 0, notified: int = 0, date_notif: str = '', id: int = 0):
         self.id = id
         self.name = name
         self.description = description

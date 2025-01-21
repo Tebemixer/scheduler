@@ -80,15 +80,18 @@ class OrganizerApp(ctk.CTk):
 
     def update_task_list(self, event=None) -> None:
         """Обновляет список задач в левой части главного меню."""
-        self.cur_tasks = []
+        self.cur_tasks.clear()
         selected_date = self.calendar.get_date()
         self.task_listbox.configure(state="normal")
         self.task_listbox.delete("1.0", "end")
         for i, task in enumerate(get_tasks_by_date(selected_date, self.tasks_db)):
+            self.cur_tasks.append(task)
+        # Иначе выдает ошибку
+        self.cur_tasks = sorted(self.cur_tasks, key=lambda task: (task.start_time, task.end_time))
+        for i, task in enumerate(self.cur_tasks):
             status_marker = "[✔] " if task.done == 1 else ""
             task_text = f"{i + 1}. {status_marker}{task.start_time}-{task.end_time}: {task.name}\n"
             self.task_listbox.insert("end", task_text)
-            self.cur_tasks.append(task)
         self.task_listbox.configure(state="disabled")
 
     def load_config(self) -> None:

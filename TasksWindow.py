@@ -30,7 +30,7 @@ class BaseTaskWindow(ctk.CTkToplevel):
         self.date_notif_entry = ctk.CTkEntry(self, placeholder_text="Напомнить за (ДД:ЧЧ:MM)")
         self.date_notif_entry.pack(pady=5, fill="x", padx=20)
 
-        self.tags_entry = ctk.CTkEntry(self, placeholder_text="Теги (через запятую)")
+        self.tags_entry = ctk.CTkEntry(self, placeholder_text="Заметки (через запятую)")
         self.tags_entry.pack(pady=5, fill="x", padx=20)
 
     def get_data(self) -> Task:
