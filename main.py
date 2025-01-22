@@ -28,13 +28,14 @@ class OrganizerApp(ctk.CTk):
         self.config_file = CONFIG_FILE
         self.date_format = DATE_FORMAT
         self.cur_tasks = []
+        self.notification_tasks = []
         # Настройки главного окна
         self.title("Органайзер")
         self.geometry("960x540")
         create_table()
         # Элементы интерфейса
         self.create_interface()
-        self.today_task = []
+
 
     def create_interface(self) -> None:
         """Создает главное меню приложения."""
@@ -59,7 +60,7 @@ class OrganizerApp(ctk.CTk):
         self.add_task_button.grid(row=1, column=0, pady=10)
         # Инициализация задач для текущей даты
         self.update_task_list()
-        self.today_task = get_tasks_by_date(self.calendar.get_date(), self.tasks_db)
+        #self.notification_tasks = get_tasks_by_date(self.calendar.get_date(), self.tasks_db)
 
         # Чекбокс для включения/выключения уведомлений
         self.notifications_enabled_flag = True
@@ -93,6 +94,21 @@ class OrganizerApp(ctk.CTk):
             task_text = f"{i + 1}. {status_marker}{task.start_time}-{task.end_time}: {task.name}\n"
             self.task_listbox.insert("end", task_text)
         self.task_listbox.configure(state="disabled")
+        self.notification_tasks.clear()
+        conn = sqlite3.connect(TASKS_DB)
+        cursor = conn.cursor()
+        query = """
+                SELECT name, description, start_time, end_time, date, tags , done, notified, date_notif, id
+                FROM tasks
+                WHERE notified = 0
+            """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        conn.close()
+        self.notification_tasks = []
+        for row in rows:
+            task = Task(*row)
+            self.notification_tasks.append(task)
 
     def load_config(self) -> None:
         """Загружает файл с состоянием флага о получении уведомлений."""
@@ -137,9 +153,9 @@ class OrganizerApp(ctk.CTk):
         """Поток для проверки необходимости отправить уведомление."""
         while not self.stop_check_time.is_set():
             if self.notifications_enabled_flag:
-                self.today_task = get_tasks_by_date(datetime.today().strftime("%y-%m-%d"), self.tasks_db)
+                self.notification_tasks = get_tasks_by_date(datetime.today().strftime("%y-%m-%d"), self.tasks_db)
                 now = datetime.now()
-                for task in self.today_task:
+                for task in self.notification_tasks:
                     if (now >= datetime.strptime(task.date_notif, self.date_format)) and not task.notified:
                         self.show_notification(task)
                         connection = sqlite3.connect(self.tasks_db)

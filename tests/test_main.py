@@ -20,10 +20,11 @@ class TestOrganizerApp(unittest.TestCase):
         """Закрывает приложение после теста."""
         self.app.destroy()
 
+    @patch("main.sqlite3.connect")
     @patch("main.Calendar")
     @patch("main.ctk.CTkTextbox")
     @patch("main.get_tasks_by_date", return_value=[])
-    def test_create_interface(self, mock_get_tasks_by_date, mock_textbox, mock_calendar):
+    def test_create_interface(self, mock_get_tasks_by_date, mock_textbox, mock_calendar, mock_connection):
         """Тестирует создание интерфейса."""
         self.app.create_interface()
 
@@ -56,10 +57,11 @@ class TestOrganizerApp(unittest.TestCase):
         mock_open.assert_called_once_with(self.app.config_file, "w")
         mock_json_dump.assert_called_once_with({"notifications_enabled": True}, mock_open())
 
+    @patch("main.sqlite3.connect")
     @patch("main.get_tasks_by_date", return_value=[
         Task("Task1", "Desc1", "09:00", "10:00", "23-12-25", "tag1", 0, 0, "23-12-25 08:55", 1)
     ])
-    def test_update_task_list(self, mock_get_tasks_by_date):
+    def test_update_task_list(self, mock_get_tasks_by_date, mock_connection):
         """Тестирует обновление списка задач."""
         self.app.update_task_list()
         mock_get_tasks_by_date.assert_called_once()
