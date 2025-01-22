@@ -17,7 +17,6 @@ class TestUtilityFunctions(unittest.TestCase):
 
         mock_toplevel.assert_called_once()
         mock_window.title.assert_called_once_with("Ошибка")
-        mock_window.geometry.assert_called_once_with("320x150")
         mock_window.grab_set.assert_called_once()
 
     @patch("main.sqlite3.connect")

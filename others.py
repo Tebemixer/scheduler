@@ -4,15 +4,23 @@ from Task import Task
 
 
 def show_error_popup(message: str) -> None:
-    """Создает окно ошибки с текстовым сообщением внутри."""
+    """Создает окно ошибки с текстовым сообщением внутри, подстраивая размер под текст."""
     error_window = ctk.CTkToplevel()
     error_window.title("Ошибка")
-    error_window.geometry("320x150")
     error_window.grab_set()
-    label = ctk.CTkLabel(error_window, text=message, font=("Arial", 14))
-    label.pack(pady=20)
+    error_window.attributes("-topmost", True)
+    # Создаем виджеты
+    label = ctk.CTkLabel(error_window, text=message, font=("Arial", 14), wraplength=300)
+    label.pack(padx=20, pady=20)  # Добавляем отступы для красоты
     close_button = ctk.CTkButton(error_window, text="Закрыть", command=error_window.destroy)
-    close_button.pack(pady=10)
+    close_button.pack(pady=(0, 20))
+
+    # Обновляем размеры окна на основе содержимого
+    error_window.update_idletasks()
+    width = error_window.winfo_reqwidth()
+    height = error_window.winfo_reqheight()
+    error_window.geometry(f"{width}x{height}")
+
 
 
 def get_tasks_by_date(date: str, task_db: str) -> list:
