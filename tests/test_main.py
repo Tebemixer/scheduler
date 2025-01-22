@@ -20,7 +20,6 @@ class TestOrganizerApp(unittest.TestCase):
         """Закрывает приложение после теста."""
         self.app.destroy()
 
-
     @patch("main.Calendar")
     @patch("main.ctk.CTkTextbox")
     @patch("main.get_tasks_by_date", return_value=[])
@@ -46,9 +45,10 @@ class TestOrganizerApp(unittest.TestCase):
         mock_open.assert_called_once_with(self.app.config_file, "r")
         self.assertTrue(self.app.notifications_enabled.get())
 
+    @patch("main.sqlite3.connect")
     @patch("json.dump")
     @patch("builtins.open", new_callable=unittest.mock.mock_open)
-    def test_save_config(self, mock_open, mock_json_dump):
+    def test_save_config(self, mock_open, mock_json_dump, mock_connection):
         """Тестирует сохранение конфигурации."""
         self.app.notifications_enabled.set(True)
         self.app.save_config()
@@ -150,3 +150,4 @@ class TestOrganizerApp(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
