@@ -125,27 +125,27 @@ class EditTaskWindow(BaseTaskWindow):
         self.task = task
         self.title("Редактировать задачу")
         self.geometry("400x400")
-        self.date = task.date
+        self.date = self.task.date
 
         # Поля для редактирования данных
-        self.name_entry.insert(0, task.name)
+        self.name_entry.insert(0, self.task.name)
 
-        if task.description:
-            self.description_entry.insert(0, task.description)
+        if self.task.description:
+            self.description_entry.insert(0, self.task.description)
 
-        if task.start_time:
-            self.start_time_entry.insert(0, task.start_time)
+        if self.task.start_time:
+            self.start_time_entry.insert(0, self.task.start_time)
 
-        if task.end_time:
-            self.end_time_entry.insert(0, task.end_time)
+        if self.task.end_time:
+            self.end_time_entry.insert(0, self.task.end_time)
 
-        if not bool(task.notified):
-            self.date_notif_entry.insert(0, self.get_what_insert_in_date_notif(task))
+        if self.task.notified == 0:
+            self.date_notif_entry.insert(0, self.get_what_insert_in_date_notif(self.task))
 
-        if task.tags:
-            self.tags_entry.insert(0, task.tags)
+        if self.task.tags:
+            self.tags_entry.insert(0, self.task.tags)
 
-        self.done_status = ctk.IntVar(value=task.done)
+        self.done_status = ctk.IntVar(value=self.task.done)
         self.checkbox = ctk.CTkCheckBox(
             self,
             text="Выполнено",
@@ -209,7 +209,4 @@ class EditTaskWindow(BaseTaskWindow):
         hours = int((total_seconds % 86400) // 3600)
         minutes = int((total_seconds % 3600) // 60)
         result = f"{days:02}:{hours:02}:{minutes:02}"
-        if task.notified == 0:
-            return result
-        else:
-            return ''
+        return result

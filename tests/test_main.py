@@ -8,7 +8,9 @@ from Task import Task
 
 
 class TestOrganizerApp(unittest.TestCase):
-    def setUp(self):
+    @patch("main.sqlite3.connect")
+    @patch("main.create_table")
+    def setUp(self, mock_create_table, mock_connection):
         """Инициализирует тестируемый объект."""
         self.app = OrganizerApp()
         # Скрываем главное окно для тестов
@@ -17,6 +19,7 @@ class TestOrganizerApp(unittest.TestCase):
     def tearDown(self):
         """Закрывает приложение после теста."""
         self.app.destroy()
+
 
     @patch("main.Calendar")
     @patch("main.ctk.CTkTextbox")
@@ -134,7 +137,7 @@ class TestOrganizerApp(unittest.TestCase):
         self.app.show_notification(mock_task)
         mock_toplevel.assert_called_once()
 
-    @patch("sqlite3.connect")
+    @patch("main.sqlite3.connect")
     def test_create_table(self, mock_connect):
         """Тестирует создание таблицы."""
         create_table()
