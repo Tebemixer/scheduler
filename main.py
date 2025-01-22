@@ -62,10 +62,9 @@ class OrganizerApp(ctk.CTk):
         self.today_task = get_tasks_by_date(self.calendar.get_date(), self.tasks_db)
 
         # Чекбокс для включения/выключения уведомлений
-        self.notifications_enabled_flag = False
+        self.notifications_enabled_flag = True
         self.notifications_enabled = ctk.BooleanVar()
         self.stop_check_time = threading.Event()
-        self.load_config()
         self.checkbox = ctk.CTkCheckBox(
             self,
             text="Включить уведомления",
@@ -75,6 +74,7 @@ class OrganizerApp(ctk.CTk):
             offvalue=False
         )
         self.checkbox.grid(row=1, column=1, pady=10)
+        self.load_config()
         self.check_thread = threading.Thread(target=self.check_time, daemon=True)
         self.check_thread.start()
 
@@ -102,8 +102,10 @@ class OrganizerApp(ctk.CTk):
                 self.notifications_enabled.set(config.get("notifications_enabled", True))
                 if self.notifications_enabled.get():
                     self.stop_check_time.clear()
+                    self.notifications_enabled_flag = True
                 else:
                     self.stop_check_time.set()
+                    self.notifications_enabled_flag = False
 
     def save_config(self) -> None:
         """Сохраняет состояние флага и запускает поток проверки уведомлений."""
@@ -154,6 +156,7 @@ class OrganizerApp(ctk.CTk):
     def show_notification(self, task: Task) -> None:
         """Создает окно уведомления и показывает его пользователю"""
         notification_window = ctk.CTkToplevel(self)
+        notification_window.attributes("-topmost", True)
         notification_window.title("Напоминание")
         notification_window.geometry("300x150")
         text = f"{task.name}\n{task.description}\n{task.start_time}-{task.end_time}\n{task.tags}"

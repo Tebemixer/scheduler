@@ -12,7 +12,7 @@ class BaseTaskWindow(ctk.CTkToplevel):
         super().__init__(parent)
 
         self.parent = parent
-
+        self.attributes("-topmost", True)
         self.date = None
         # Поля для ввода данных
         self.name_entry = ctk.CTkEntry(self, placeholder_text="Название задачи")
