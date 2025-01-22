@@ -9,9 +9,8 @@ def show_error_popup(message: str) -> None:
     error_window.title("Ошибка")
     error_window.grab_set()
     error_window.attributes("-topmost", True)
-    # Создаем виджеты
     label = ctk.CTkLabel(error_window, text=message, font=("Arial", 14), wraplength=300)
-    label.pack(padx=20, pady=20)  # Добавляем отступы для красоты
+    label.pack(padx=20, pady=20)
     close_button = ctk.CTkButton(error_window, text="Закрыть", command=error_window.destroy)
     close_button.pack(pady=(0, 20))
 
