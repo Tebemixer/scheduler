@@ -1,17 +1,15 @@
 """
-Задания:
-• используйте в описание классов, согласно варианта индивидуального задания,
-наследование — для этого определите для одного из классов-сущностей не менее двух
-потомков, которые расширяют атрибуты-данные и атрибуты-методы родительского
-класса;
-• для использования полиморфизма в классах-потомках измените реализацию
-отдельных унаследованных методов, отвечающих за изменение и считывание
-значений из атрибутов классов;
-• протестируйте с помощью unittest создание экземпляров классов-потомков,
-использование добавленных в них новых методов, изменённых унаследованных
-методов.
+преобразуйте атрибуты и методы своих классов, согласно варианта индивидуального
+работы, в приватные для предотвращения переопределения;
+• используйте в разработанных классах свойства для предоставления доступа к
+атрибутам;
+• создайте не менее двух собственных классов исключений с атрибутами и примените
+их в своих классах, согласно варианта индивидуальной работы, генерируя
+исключения;
+• используйте unittest для проверки, что в коде происходит генерация исключений
+(assertRaises).
 
-ВВЕДЕН КЛАСС Person, его потомки Driver и MaintenanceStaff
+ВВЕДЕНЫ КЛАССЫ InvalidPhoneError InvalidExperienceError
 """
 from datetime import datetime
 import pickle
@@ -55,15 +53,63 @@ def _next_garage_number():
 
 class Vehicle:
     def __init__(self, name, usage_hours=0, mileage=0, repairs_count=0, characteristics=''):
-        self.name = name
-        self.usage_hours = usage_hours
-        self.mileage = mileage
-        self.repairs_count = repairs_count
-        self.characteristics = characteristics
-        self.id = _next_vehicle_number()
-        self.change_history = []
+        self.__name = name
+        self.__usage_hours = usage_hours
+        self.__mileage = mileage
+        self.__repairs_count = repairs_count
+        self.__characteristics = characteristics
+        self.__id = _next_vehicle_number()
+        self.__change_history = []
 
-    def get_info(self):
+    @property
+    def name(self):
+        return self.__name
+
+    @name.setter
+    def name(self, value):
+        self.__name = value
+
+    @property
+    def usage_hours(self):
+        return self.__usage_hours
+
+    @usage_hours.setter
+    def usage_hours(self, value):
+        self.__usage_hours = value
+
+    @property
+    def mileage(self):
+        return self.__mileage
+
+    @mileage.setter
+    def mileage(self, value):
+        self.__mileage = value
+
+    @property
+    def repairs_count(self):
+        return self.__repairs_count
+
+    @repairs_count.setter
+    def repairs_count(self, value):
+        self.__repairs_count = value
+
+    @property
+    def characteristics(self):
+        return self.__characteristics
+
+    @characteristics.setter
+    def characteristics(self, value):
+        self.__characteristics = value
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def change_history(self):
+        return self.__change_history
+
+    def __get_info(self):
         return {
             "Name": self.name,
             "Usage Hours": self.usage_hours,
@@ -74,9 +120,9 @@ class Vehicle:
         }
 
     def __str__(self):
-        return str(self.get_info())[1:-1]  # Воспользуемся тем, что у dict есть свой str
+        return str(self.__get_info())[1:-1]  # Воспользуемся тем, что у dict есть свой str
 
-    def update_info(self, name, usage_hours, mileage, repairs_count, characteristics):
+    def __update_info(self, name, usage_hours, mileage, repairs_count, characteristics):
         r = '{0};{1}:'.format(datetime.today(), self.id)
         if name != self.name:
             r += ' name:{0}->{1};'.format(self.name, name)
@@ -104,14 +150,54 @@ class Vehicle:
 
 class Route:
     def __init__(self, name, vehicle, driver, schedule=''):
-        self.name = name
-        self.vehicle = vehicle
-        self.driver = driver
-        self.schedule = schedule
-        self.id = _next_route_number()
-        self.change_history = []
+        self.__name = name
+        self.__vehicle = vehicle
+        self.__driver = driver
+        self.__schedule = schedule
+        self.__id = _next_route_number()
+        self.__change_history = []
 
-    def get_info(self):
+    @property
+    def name(self):
+        return self.__name
+
+    @name.setter
+    def name(self, value):
+        self.__name = value
+
+    @property
+    def vehicle(self):
+        return self.__vehicle
+
+    @vehicle.setter
+    def vehicle(self, value):
+        self.__vehicle = value
+
+    @property
+    def driver(self):
+        return self.__driver
+
+    @driver.setter
+    def driver(self, value):
+        self.__driver = value
+
+    @property
+    def schedule(self):
+        return self.__schedule
+
+    @schedule.setter
+    def schedule(self, value):
+        self.__schedule = value
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def change_history(self):
+        return self.__change_history
+
+    def __get_info(self):
         return {
             "Route Name": self.name,
             "Vehicle": self.vehicle,
@@ -121,9 +207,9 @@ class Route:
         }
 
     def __str__(self):
-        return str(self.get_info())[1:-1]
+        return str(self.__get_info())[1:-1]
 
-    def update_info(self, name, vehicle, driver, schedule):
+    def __update_info(self, name, vehicle, driver, schedule):
         r = '{0};{1}:'.format(datetime.today(), self.id)
         if name != self.name:
             r += ' name:{0}->{1};'.format(self.name, name)
@@ -149,16 +235,91 @@ class Route:
 class Person:
     def __init__(self, last_name, first_name, middle_name, birth_year, gender,
                  address='', city='', phone=''):
-        self.last_name = last_name
-        self.first_name = first_name
-        self.middle_name = middle_name
-        self.birth_year = birth_year
-        self.gender = gender
-        self.address = address
-        self.city = city
-        self.phone = phone
-        self.change_history = []
+        self.__last_name = last_name
+        self.__first_name = first_name
+        self.__middle_name = middle_name
+        self.__birth_year = birth_year
+        self.__gender = gender
+        self.__address = address
+        self.__city = city
+        self.__phone = phone
+        self.__change_history = []
 
+    @property
+    def last_name(self):
+        return self.__last_name
+
+    @last_name.setter
+    def last_name(self, value):
+        self.__last_name = value
+
+    @property
+    def first_name(self):
+        return self.__first_name
+
+    @first_name.setter
+    def first_name(self, value):
+        self.__first_name = value
+
+    @property
+    def middle_name(self):
+        return self.__middle_name
+
+    @middle_name.setter
+    def middle_name(self, value):
+        self.__middle_name = value
+
+    @property
+    def birth_year(self):
+        return self.__birth_year
+
+    @birth_year.setter
+    def birth_year(self, value):
+        self.__birth_year = value
+
+    @property
+    def gender(self):
+        return self.__gender
+
+    @gender.setter
+    def gender(self, value):
+        self.__gender = value
+
+    @property
+    def address(self):
+        return self.__address
+
+    @address.setter
+    def address(self, value):
+        self.__address = value
+
+    @property
+    def city(self):
+        return self.__city
+
+    @city.setter
+    def city(self, value):
+        self.__city = value
+
+    @property
+    def phone(self):
+        return self.__phone
+
+    @phone.setter
+    def phone(self, value):
+        flag = 0
+        for x in value:
+            if x not in '+()- 0123456789':
+                flag = 1
+                raise InvalidPhoneError(value)
+        if flag == 0:
+            self.__phone = value
+
+    @property
+    def change_history(self):
+        return self.__change_history
+
+    # ИНАЧЕ НЕ УНАСЛЕДУЮЕТСЯ
     def get_info(self):
         return {
             "Name": f"{self.last_name} {self.first_name} {self.middle_name}",
@@ -169,6 +330,7 @@ class Person:
             "Phone": self.phone,
         }
 
+    # ИНАЧЕ НЕ УНАСЛЕДУЮЕТСЯ
     def update_info(self, last_name, first_name, middle_name, birth_year, gender,
                     address, city, phone):
         r = '{0};{1}:'.format(datetime.today(), self.id)
@@ -204,12 +366,43 @@ class Driver(Person):
                  address='', city='', phone=''):
         super(Driver, self).__init__(last_name, first_name, middle_name, birth_year, gender,
                                      address, city, phone)
-        self.start_year = start_year
-        self.experience = experience
-        self.position = position
-        self.id = _next_driver_number()
+        self.__start_year = start_year
+        self.__experience = experience
+        self.__position = position
+        self.__id = _next_driver_number()
 
-    def get_info(self):
+    @property
+    def start_year(self):
+        return self.__start_year
+
+    @start_year.setter
+    def start_year(self, value):
+        self.__start_year = value
+
+    @property
+    def experience(self):
+        return self.__experience
+
+    @experience.setter
+    def experience(self, value):
+        if not isinstance(value, int) or value < 0:
+            raise InvalidExperienceError(value)
+        else:
+            self.__experience = value
+
+    @property
+    def position(self):
+        return self.__position
+
+    @position.setter
+    def position(self, value):
+        self.__position = value
+
+    @property
+    def id(self):
+        return self.__id
+
+    def __get_info(self):
         info = super(Driver, self).get_info()
         info["Start Year"] = self.start_year
         info["Experience"] = self.experience
@@ -220,8 +413,8 @@ class Driver(Person):
     def __str__(self):
         return str(self.get_info())[1:-1]
 
-    def update_info(self, last_name, first_name, middle_name, birth_year, gender, address, city, phone, start_year,
-                    experience, position):
+    def __update_info(self, last_name, first_name, middle_name, birth_year, gender, address, city, phone, start_year,
+                      experience, position):
         r = super(Driver, self).update_info(last_name, first_name, middle_name, birth_year, gender,
                                             address, city, phone)
         if start_year != self.start_year:
@@ -247,12 +440,43 @@ class MaintenanceStaff(Person):
                  address='', city='', phone=''):
         super(MaintenanceStaff, self).__init__(last_name, first_name, middle_name, birth_year, gender,
                                                address, city, phone)
-        self.start_year = start_year
-        self.experience = experience
-        self.position = position
-        self.id = _next_maintenancestaff_number()
+        self.__start_year = start_year
+        self.__experience = experience
+        self.__position = position
+        self.__id = _next_maintenancestaff_number()
 
-    def get_info(self):
+    @property
+    def start_year(self):
+        return self.__start_year
+
+    @start_year.setter
+    def start_year(self, value):
+        self.__start_year = value
+
+    @property
+    def experience(self):
+        return self.__experience
+
+    @experience.setter
+    def experience(self, value):
+        if not isinstance(value, int) or value < 0:
+            raise InvalidExperienceError(value)
+        else:
+            self.__experience = value
+
+    @property
+    def position(self):
+        return self.__position
+
+    @position.setter
+    def position(self, value):
+        self.__position = value
+
+    @property
+    def id(self):
+        return self.__id
+
+    def __get_info(self):
         info = super(MaintenanceStaff, self).get_info()
         info["Start Year"] = self.start_year
         info["Experience"] = self.experience
@@ -263,8 +487,8 @@ class MaintenanceStaff(Person):
     def __str__(self):
         return str(self.get_info())[1:-1]
 
-    def update_info(self, last_name, first_name, middle_name, birth_year, gender, address, city, phone, start_year,
-                    experience, position):
+    def __update_info(self, last_name, first_name, middle_name, birth_year, gender, address, city, phone, start_year,
+                      experience, position):
         r = super(MaintenanceStaff, self).update_info(last_name, first_name, middle_name, birth_year, gender,
                                                       address, city, phone)
         if start_year != self.start_year:
@@ -287,17 +511,81 @@ class MaintenanceStaff(Person):
 
 class Garage:
     def __init__(self, name, vehicle, repair_type, date_received, date_released, repair_result='', personnel=[]):
-        self.name = name
-        self.vehicle = vehicle
-        self.repair_type = repair_type
-        self.date_received = date_received
-        self.date_released = date_released
-        self.repair_result = repair_result
-        self.personnel = personnel
-        self.id = _next_garage_number()
-        self.change_history = []
+        self.__name = name
+        self.__vehicle = vehicle
+        self.__repair_type = repair_type
+        self.__date_received = date_received
+        self.__date_released = date_released
+        self.__repair_result = repair_result
+        self.__personnel = personnel
+        self.__id = _next_garage_number()
+        self.__change_history = []
 
-    def get_info(self):
+    @property
+    def name(self):
+        return self.__name
+
+    @name.setter
+    def name(self, value):
+        self.__name = value
+
+    @property
+    def vehicle(self):
+        return self.__vehicle
+
+    @vehicle.setter
+    def vehicle(self, value):
+        self.__vehicle = value
+
+    @property
+    def repair_type(self):
+        return self.__repair_type
+
+    @repair_type.setter
+    def repair_type(self, value):
+        self.__repair_type = value
+
+    @property
+    def date_received(self):
+        return self.__date_received
+
+    @date_received.setter
+    def date_received(self, value):
+        self.__date_received = value
+
+    @property
+    def date_released(self):
+        return self.__date_released
+
+    @date_released.setter
+    def date_released(self, value):
+        self.__date_released = value
+
+    @property
+    def repair_result(self):
+        return self.__repair_result
+
+    @repair_result.setter
+    def repair_result(self, value):
+        self.__repair_result = value
+
+    @property
+    def personnel(self):
+        return self.__personnel
+
+    @personnel.setter
+    def personnel(self, value):
+        self.__personnel = value
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def change_history(self):
+        return self.__change_history
+
+    def __get_info(self):
         return {
             "Garage Name": self.name,
             "Vehicle": self.vehicle,
@@ -310,9 +598,9 @@ class Garage:
         }
 
     def __str__(self):
-        return str(self.get_info())[1:-1]
+        return str(self.__get_info())[1:-1]
 
-    def update_info(self, name, vehicle, repair_type, date_received, date_released, repair_result, personnel):
+    def __update_info(self, name, vehicle, repair_type, date_received, date_released, repair_result, personnel):
         r = '{0};{1}:'.format(datetime.today(), self.id)
         if name != self.name:
             r += ' name:{0}->{1};'.format(self.name, name)
@@ -354,3 +642,27 @@ class PersistenceClass:
         with open(file_name, 'rb') as f:
             something = pickle.load(f)
             return something
+
+
+class InvalidPhoneError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return 'Invalid phone {0}, only digits are allowed'.format(self.value)
+
+
+class InvalidExperienceError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        if isinstance(self.value, int) and self.value <0:
+            return 'Invalid experience value {0}<0'.format(self.value)
+        else:
+            return 'Invalid experience value {0}, must be int'.format(self.value)
+
+
+driver = Driver("Ivanov", "Ivan", "Ivanovich", 1980, 2005, 20,
+                "Bus driver", "Male", "Street 123", "Moscow", "+123456789")
+driver.experience = 5
