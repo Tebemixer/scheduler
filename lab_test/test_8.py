@@ -1,8 +1,7 @@
 import unittest
 import os
-import pickle
-from unittest.mock import patch, MagicMock
-from lab.eighth import AutoCity, Vehicle, Route, Driver, MaintenanceStaff, Garage
+from unittest.mock import patch
+from lab.eighth import AutoCity, Vehicle, Route, Driver
 import lab.eighth
 
 
@@ -17,7 +16,6 @@ class TestAutoCity(unittest.TestCase):
         lab.eighth._next_route = 0
         lab.eighth._next_garage = 0
         lab.eighth._next_maintenancestaff = 0
-        self.cleanup()
 
     def cleanup(self):
         """Удаляет созданные тестовые файлы баз данных."""
@@ -50,8 +48,9 @@ class TestAutoCity(unittest.TestCase):
         self.autocity.route_database.delete_object(route.id)
         self.assertEqual(len(self.autocity.route_database.database), 0)
 
+    @patch("builtins.open")
     @patch('builtins.input', side_effect=['Updated Route', '20', '200', '1', 'Updated schedule'])
-    def test_update_route(self, mock_input):
+    def test_update_route(self, mock_input, mock_file):
         """Тестирует обновления объекта Route в базе данных."""
         route = Route('Test Route', [1], [1], 'Test schedule')
         self.autocity.route_database.database[route.id] = route
@@ -85,8 +84,9 @@ class TestAutoCity(unittest.TestCase):
         self.autocity.vehicle_database.delete_object(vehicle.id)
         self.assertEqual(len(self.autocity.vehicle_database.database), 0)
 
+    @patch("builtins.open")
     @patch('builtins.input', side_effect=['Updated Vehicle', '20', '200', '1', 'Updated characteristics'])
-    def test_update_vehicle(self, mock_input):
+    def test_update_vehicle(self, mock_input, mock_open):
         """Тестирует обновления объекта Vehicle в базе данных."""
         vehicle = Vehicle('Test Vehicle', 10, 100, 2, 'Test characteristics')
         self.autocity.vehicle_database.database[vehicle.id] = vehicle
