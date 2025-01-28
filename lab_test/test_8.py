@@ -4,6 +4,7 @@ import os
 import pickle
 
 from lab.eighth import AutoCity, Vehicle, Driver
+import lab.eighth
 
 class TestAutoCity(unittest.TestCase):
     def setUp(self):
@@ -20,7 +21,11 @@ class TestAutoCity(unittest.TestCase):
         for filename in ['Vehicle.pkl', 'Route.pkl', 'Driver.pkl', 'MaintenanceStaff.pkl', 'Garage.pkl']:
             if os.path.exists(filename):
                 os.remove(filename)
-
+        lab.eighth._next_vehicle = 0
+        lab.eighth._next_maintenancestaff = 0
+        lab.eighth._next_route = 0
+        lab.eighth._next_garage = 0
+        lab.eighth._next_driver = 0
     def test_add_vehicle(self):
         """Тест добавления транспортного средства в базу данных"""
         self.auto_city.vehicle_database.add_object("Car1", 100, 2000, 0, "Electric")
@@ -33,7 +38,7 @@ class TestAutoCity(unittest.TestCase):
     def test_change_vehicle(self):
         """Тест изменения данных транспортного средства"""
         self.auto_city.vehicle_database.add_object("Car1", 100, 2000, 0, "Electric")
-        self.auto_city.vehicle_database.change_object(1, "Car2", 200, 3000, 1, "Hybrid")
+        self.auto_city.vehicle_database.change_object(1, "Car2, 200, 3000, 1, Hybrid")
         vehicle = self.auto_city.vehicle_database.get_object_by_id(1)
         self.assertEqual(vehicle.name, "Car2")
         self.assertEqual(vehicle.mileage, 3000)

@@ -12,12 +12,12 @@
 
 УБРАНЫ ДЕКОРАТОРЫ
 ВВЕДЕН КЛАСС ClassBase
-каждому классу дан публичный метод изменения атрибутов
+каждому классу дан публичный метод изменения атрибутов, получения а также создания экземпляра,
 """
 from datetime import datetime
 import pickle
 import time
-from functools import wraps
+import os
 
 
 def time_execution(func):
@@ -91,26 +91,33 @@ class Vehicle:
     """Класс Vehicle отражает характеристики автотранспорта"""
 
     def __init__(self, name, usage_hours=0, mileage=0, repairs_count=0, characteristics=''):
-        if isinstance(name, str) and ',' in name:
-            # Разбиваем строку на части
-            parts = name.split(',')
-            if len(parts) < 4:  # Убедимся, что есть хотя бы 4 значения
-                raise ValueError("Строка должна содержать не менее 4 полей, разделенных запятыми.")
-            self.__name = parts[0].strip()
-            self.__usage_hours = int(parts[1].strip())
-            self.__mileage = int(parts[2].strip())
-            self.__repairs_count = int(parts[3].strip())
-            self.__characteristics = ','.join(parts[4:]).strip()
-        else:
-            # Стандартная инициализация, если переданы отдельные параметры
-            self.__name = name
-            self.__usage_hours = usage_hours
-            self.__mileage = mileage
-            self.__repairs_count = repairs_count
-            self.__characteristics = characteristics
-
+        self.__name = name
+        self.__usage_hours = usage_hours
+        self.__mileage = mileage
+        self.__repairs_count = repairs_count
+        self.__characteristics = characteristics
         self.__id = _next_vehicle_number()
         self.__change_history = []
+
+    @staticmethod
+    def add_object():
+        name = input('Введите имя: ')
+        usage_hours = int(input('Введите часы использования: '))
+        mileage = int(input('Введите пробег: '))
+        repairs_count = int(input('Введите часы ремонта: '))
+        characteristics = input('Введите характеристику: ')
+        return Vehicle(name, usage_hours, mileage, repairs_count, characteristics)
+
+    def update_public_info(self):
+        name = input('Введите имя: ')
+        usage_hours = int(input('Введите часы использования: '))
+        mileage = int(input('Введите пробег: '))
+        repairs_count = int(input('Введите имя автотранспорта: '))
+        characteristics = input('Введите имя автотранспорта: ')
+        self.__update_info(name, usage_hours, mileage, repairs_count, characteristics)
+
+    def get_public_info(self):
+        return self.__get_info()
 
     @property
     def name(self):
@@ -171,14 +178,6 @@ class Vehicle:
             'id': self.id
         }
 
-    def get_public_info(self):
-        return self.__get_info()
-
-    def update_public_info(self, row):
-        row = row.split(',')
-        self.__update_info(name=row[0], usage_hours=row[0], mileage=row[0], repairs_count=row[0],
-                           characteristics=row[0])
-
     def __str__(self):
         return str(self.__get_info())[1:-1]  # Воспользуемся тем, что у dict есть свой str
 
@@ -229,23 +228,34 @@ class Route:
     """Класс Route отражает описание маршрута"""
 
     def __init__(self, name, vehicle, driver, schedule=''):
-        if isinstance(name, str) and ',' in name:
-            parts = name.split(',')
-            if len(parts) < 4:
-                raise ValueError("Строка должна содержать не менее 4 полей: name, vehicle, driver, schedule.")
-
-            self.__name = parts[0].strip()
-            self.__vehicle = parts[1].strip()
-            self.__driver = parts[2].strip()
-            self.__schedule = parts[3].strip()
-        else:
-            self.__name = name
-            self.__vehicle = vehicle
-            self.__driver = driver
-            self.__schedule = schedule
-
+        self.__name = name
+        self.__vehicle = vehicle
+        self.__driver = driver
+        self.__schedule = schedule
         self.__id = _next_route_number()
         self.__change_history = []
+
+    @staticmethod
+    def add_object():
+        name = input('Введите название маршрута: ')
+        vehicle = input('Введите id транспорта через запятую: ')
+        vehicle = list(map(int, vehicle.split(',')))
+        driver = input('Введите id водителей через запятую: ')
+        driver = list(map(int, driver.split(',')))
+        schedule = input('Введите расписание: ')
+        return Route(name, vehicle, driver, schedule)
+
+    def update_public_info(self):
+        name = input('Введите название маршрута: ')
+        vehicle = input('Введите id транспорта через запятую: ')
+        vehicle = list(map(int, vehicle.split(',')))
+        driver = input('Введите id водителей через запятую: ')
+        driver = list(map(int, driver.split(',')))
+        schedule = input('Введите расписание: ')
+        self.__update_info(name, vehicle, driver, schedule)
+
+    def get_public_info(self):
+        return self.__get_info()
 
     @property
     def name(self):
@@ -297,14 +307,8 @@ class Route:
             'id': self.id
         }
 
-    def get_public_info(self):
-        return self.__get_info()
-
     def __str__(self):
         return str(self.__get_info())[1:-1]
-
-    def update_public_info(self, name, vehicle, driver, schedule):
-        self.__update_info(name, vehicle, driver, schedule)
 
     def __update_info(self, name, vehicle, driver, schedule):
         """Производит переопределение всех атрибутов, а также записывает изменения в файл txt"""
@@ -346,30 +350,14 @@ class Person:
 
     def __init__(self, last_name, first_name, middle_name, birth_year, gender,
                  address='', city='', phone=''):
-        if isinstance(last_name, str) and ',' in last_name:
-            parts = last_name.split(',')
-            if len(parts) < 5:
-                raise ValueError(
-                    "Строка должна содержать не менее 5 полей: last_name, first_name, middle_name, birth_year, gender.")
-
-            self.__last_name = parts[0].strip()
-            self.__first_name = parts[1].strip()
-            self.__middle_name = parts[2].strip()
-            self.__birth_year = int(parts[3].strip())
-            self.__gender = parts[4].strip()
-            self.__address = parts[5].strip() if len(parts) > 5 else ''
-            self.__city = parts[6].strip() if len(parts) > 6 else ''
-            self.__phone = parts[7].strip() if len(parts) > 7 else ''
-        else:
-            self.__last_name = last_name
-            self.__first_name = first_name
-            self.__middle_name = middle_name
-            self.__birth_year = birth_year
-            self.__gender = gender
-            self.__address = address
-            self.__city = city
-            self.__phone = phone
-
+        self.__last_name = last_name
+        self.__first_name = first_name
+        self.__middle_name = middle_name
+        self.__birth_year = birth_year
+        self.__gender = gender
+        self.__address = address
+        self.__city = city
+        self.__phone = phone
         self.__change_history = []
 
     @property
@@ -509,28 +497,48 @@ class Person:
 class Driver(Person):
     """Класс Driver отражает характеристики водителя"""
 
-    def __init__(self, last_name, first_name=None, middle_name=None, birth_year=None, start_year=None,
-                 experience=None, position=None, gender=None, address='', city='', phone=''):
-        if isinstance(last_name, str) and ',' in last_name:
-            parts = last_name.split(',')
-            if len(parts) < 8:
-                raise ValueError(
-                    "Строка должна содержать не менее 8 полей: last_name, first_name, middle_name, birth_year, "
-                    "start_year, experience, position, gender.")
-
-            super().__init__(parts[0], parts[1], parts[2], int(parts[3]), parts[7],
-                             address='', city='', phone='')
-            self.__start_year = int(parts[4].strip())
-            self.__experience = int(parts[5].strip())
-            self.__position = parts[6].strip()
-        else:
-            super().__init__(last_name, first_name, middle_name, birth_year, gender,
-                             address, city, phone)
-            self.__start_year = start_year
-            self.__experience = experience
-            self.__position = position
-
+    def __init__(self, last_name, first_name, middle_name, birth_year, start_year, experience, position, gender,
+                 address='', city='', phone=''):
+        super(Driver, self).__init__(last_name, first_name, middle_name, birth_year, gender,
+                                     address, city, phone)
+        self.__start_year = start_year
+        self.__experience = experience
+        self.__position = position
         self.__id = _next_driver_number()
+
+    @staticmethod
+    def add_object():
+        last_name = input('Введите фамилию: ')
+        first_name = input('Введите имя: ')
+        middle_name = input('Введите отчество: ')
+        birth_year = int(input('Введите год рождения: '))
+        start_year = int(input('Введите год начала работы: '))
+        experience = int(input('Введите стаж: '))
+        position = input('Введите должность: ')
+        gender = input('Введите пол: ')
+        address = input('Введите адрес: ')
+        city = input('Введите город: ')
+        phone = input('Введите телефон: ')
+        return Driver(last_name, first_name, middle_name, birth_year, start_year, experience, position, gender, address,
+                      city, phone)
+
+    def update_public_info(self):
+        last_name = input('Введите новую фамилию: ')
+        first_name = input('Введите новое имя: ')
+        middle_name = input('Введите новое отчество: ')
+        birth_year = int(input('Введите новый год рождения: '))
+        start_year = int(input('Введите новый год начала работы: '))
+        experience = int(input('Введите новый стаж: '))
+        position = input('Введите новую должность: ')
+        gender = input('Введите новый пол: ')
+        address = input('Введите новый адрес: ')
+        city = input('Введите новый город: ')
+        phone = input('Введите новый телефон: ')
+        self.__update_info(last_name, first_name, middle_name, birth_year, start_year, experience, position, gender,
+                           address, city, phone)
+
+    def get_public_info(self):
+        return self.__get_info()
 
     @property
     def start_year(self):
@@ -571,15 +579,6 @@ class Driver(Person):
         info["Position"] = self.position
         info["id"] = self.id
         return info
-
-    def get_public_info(self):
-        return self.__get_info()
-
-    def update_public_info(self, last_name, first_name, middle_name, birth_year, gender, address, city, phone,
-                           start_year,
-                           experience, position):
-        self.__update_info(last_name, first_name, middle_name, birth_year, gender, address, city, phone, start_year,
-                           experience, position)
 
     def __str__(self):
         return str(self.get_info())[1:-1]
@@ -626,28 +625,48 @@ class Driver(Person):
 class MaintenanceStaff(Person):
     """Класс MaintenanceStaff отражает описание обслуживающего персонала"""
 
-    def __init__(self, last_name, first_name=None, middle_name=None, birth_year=None, start_year=None,
-                 experience=None, position=None, gender=None, address='', city='', phone=''):
-        if isinstance(last_name, str) and ',' in last_name:
-            parts = last_name.split(',')
-            if len(parts) < 8:
-                raise ValueError(
-                    "Строка должна содержать не менее 8 полей: last_name, first_name, middle_name, birth_year, "
-                    "start_year, experience, position, gender.")
-
-            super().__init__(parts[0], parts[1], parts[2], int(parts[3]), parts[7],
-                             address='', city='', phone='')
-            self.__start_year = int(parts[4].strip())
-            self.__experience = int(parts[5].strip())
-            self.__position = parts[6].strip()
-        else:
-            super().__init__(last_name, first_name, middle_name, birth_year, gender,
-                             address, city, phone)
-            self.__start_year = start_year
-            self.__experience = experience
-            self.__position = position
-
+    def __init__(self, last_name, first_name, middle_name, birth_year, start_year, experience, position, gender,
+                 address='', city='', phone=''):
+        super(MaintenanceStaff, self).__init__(last_name, first_name, middle_name, birth_year, gender,
+                                               address, city, phone)
+        self.__start_year = start_year
+        self.__experience = experience
+        self.__position = position
         self.__id = _next_maintenancestaff_number()
+
+    @staticmethod
+    def add_object():
+        last_name = input('Введите фамилию: ')
+        first_name = input('Введите имя: ')
+        middle_name = input('Введите отчество: ')
+        birth_year = int(input('Введите год рождения: '))
+        start_year = int(input('Введите год начала работы: '))
+        experience = int(input('Введите стаж: '))
+        position = input('Введите должность: ')
+        gender = input('Введите пол: ')
+        address = input('Введите адрес: ')
+        city = input('Введите город: ')
+        phone = input('Введите телефон: ')
+        return Driver(last_name, first_name, middle_name, birth_year, start_year, experience, position, gender, address,
+                      city, phone)
+
+    def update_public_info(self):
+        last_name = input('Введите новую фамилию: ')
+        first_name = input('Введите новое имя: ')
+        middle_name = input('Введите новое отчество: ')
+        birth_year = int(input('Введите новый год рождения: '))
+        start_year = int(input('Введите новый год начала работы: '))
+        experience = int(input('Введите новый стаж: '))
+        position = input('Введите новую должность: ')
+        gender = input('Введите новый пол: ')
+        address = input('Введите новый адрес: ')
+        city = input('Введите новый город: ')
+        phone = input('Введите новый телефон: ')
+        self.__update_info(last_name, first_name, middle_name, birth_year, start_year, experience, position, gender,
+                           address, city, phone)
+
+    def get_public_info(self):
+        return self.__get_info()
 
     @property
     def start_year(self):
@@ -688,15 +707,6 @@ class MaintenanceStaff(Person):
         info["Position"] = self.position
         info["id"] = self.id
         return info
-
-    def get_public_info(self):
-        return self.__get_info()
-
-    def update_public_info(self, last_name, first_name, middle_name, birth_year, gender, address, city, phone,
-                           start_year,
-                           experience, position):
-        self.__update_info(last_name, first_name, middle_name, birth_year, gender, address, city, phone, start_year,
-                           experience, position)
 
     def __str__(self):
         return str(self.get_info())[1:-1]
@@ -740,37 +750,48 @@ class MaintenanceStaff(Person):
         self.experience /= value
 
 
-@time_execution
-@count_calls
 class Garage:
     """Класс Garage отражает описание гаражного хозяйства"""
 
     def __init__(self, name, vehicle, repair_type, date_received, date_released, repair_result='', personnel=[]):
-        if isinstance(name, str) and ',' in name:
-            parts = name.split(',')
-            if len(parts) < 5:
-                raise ValueError(
-                    "Строка должна содержать не менее 5 полей: name, vehicle, repair_type, date_received, "
-                    "date_released.")
-
-            self.__name = parts[0].strip()
-            self.__vehicle = Vehicle(parts[1].strip()) if ',' in parts[1] else parts[1].strip()
-            self.__repair_type = parts[2].strip()
-            self.__date_received = parts[3].strip()
-            self.__date_released = parts[4].strip()
-            self.__repair_result = ','.join(parts[5:]).strip() if len(parts) > 5 else ''
-            self.__personnel = personnel
-        else:
-            self.__name = name
-            self.__vehicle = vehicle
-            self.__repair_type = repair_type
-            self.__date_received = date_received
-            self.__date_released = date_released
-            self.__repair_result = repair_result
-            self.__personnel = personnel
-
+        self.__name = name
+        self.__repair_type = repair_type
+        self.__date_received = date_received
+        self.__date_released = date_released
+        self.__repair_result = repair_result
+        self.__personnel = personnel
         self.__id = _next_garage_number()
         self.__change_history = []
+        if isinstance(vehicle, Vehicle):
+            self.__vehicle = vehicle
+        else:
+            self.__vehicle = Vehicle(vehicle["Name"], vehicle["Usage Hours"], vehicle["Mileage"], vehicle["Repairs "
+                                                                                                          "Count"],
+                                     vehicle["Characteristics"])
+
+    @staticmethod
+    def add_object():
+        name = input('Введите название гаража: ')
+        vehicle = int(input('Введите id транспортного средства: '))
+        repair_type = input('Введите тип ремонта: ')
+        date_received = input('Введите дату получения: ')
+        date_released = input('Введите дату окончания ремонта: ')
+        repair_result = input('Введите результат ремонта: ')
+        personnel = list(map(int, input('Введите id персонала через запятую: ').split(',')))
+        return Garage(name, vehicle, repair_type, date_received, date_released, repair_result, personnel)
+
+    def update_public_info(self):
+        name = input('Введите название гаража: ')
+        vehicle = int(input('Введите id транспортного средства: '))
+        repair_type = input('Введите тип ремонта: ')
+        date_received = input('Введите дату получения: ')
+        date_released = input('Введите дату окончания ремонта: ')
+        repair_result = input('Введите результат ремонта: ')
+        personnel = list(map(int, input('Введите id персонала через запятую: ').split(',')))
+        self.__update_info(name, vehicle, repair_type, date_received, date_released, repair_result, personnel)
+
+    def get_public_info(self):
+        return self.__get_info()
 
     @property
     def name(self):
@@ -880,12 +901,6 @@ class Garage:
             with open('history of change {0}.txt'.format(type(self).__name__), 'a') as f:
                 f.write(r[:-1] + '\n')
 
-    def get_public_info(self):
-        return self.__get_info()
-
-    def update_public_info(self, name, vehicle, repair_type, date_received, date_released, repair_result, personnel):
-        self.__update_info(name, vehicle, repair_type, date_received, date_released, repair_result, personnel)
-
     def __del__(self):
         self.change_history.clear()
 
@@ -973,8 +988,9 @@ class ClassBase:
         with open(self.filename, 'wb') as f:
             pickle.dump(self.database, f)
 
-    def add_object(self, *args):
-        object = self.cls(*args)
+    def add_object(self):
+        print('enter info about {0}'.format(self.cls.__name__))
+        object = self.cls.add_object()
         self.database[object.id] = object
         self.save_database()
 
@@ -988,11 +1004,12 @@ class ClassBase:
 
         self.save_database()
 
-    def change_object(self, id, *args):
+    def change_object(self, id):
+        print('enter info about {0}'.format(self.cls.__name__))
         object = self.get_object_by_id(id)
         if not object:
             raise ValueError('value does not exist')
-        object.update_public_info(*args)
+        object.update_public_info()
         self.save_database()
 
 
@@ -1027,11 +1044,9 @@ class AutoCity:
         choice = 0
         choices = {
             1: lambda: self.choose_database(int(input('enter number of option'))),
-            2: lambda: self.cur_database.add_object(
-                input('enter info about {0}'.format(self.cur_database.cls.__name__))),
+            2: lambda: self.cur_database.add_object(),
             3: lambda: self.cur_database.delete_object(int(input('enter id'))),
-            4: lambda: self.cur_database.change_object(int(input('enter_id')), input(
-                'enter info about {0}'.format(self.cur_database.cls.__name__)))
+            4: lambda: self.cur_database.change_object(int(input('enter_id')))
         }
         while choice != 5:
             print()
@@ -1045,6 +1060,7 @@ class AutoCity:
             choice = int(input())
             if choice in choices:
                 choices[choice]()
+                os.system('cls')
                 self.printDB(self.cur_database)
 
 
