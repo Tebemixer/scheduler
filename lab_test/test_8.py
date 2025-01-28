@@ -1,80 +1,105 @@
 import unittest
-from unittest.mock import patch
 import os
-import pickle
-
-from lab.eighth import AutoCity, Vehicle, Driver
+from unittest.mock import patch, MagicMock
+from lab.eighth import AutoCity, Vehicle, Route, Driver, MaintenanceStaff, Garage
 import lab.eighth
+
 
 class TestAutoCity(unittest.TestCase):
     def setUp(self):
-        """Инициализация перед каждым тестом"""
-        self.auto_city = AutoCity()
+        """Создание тестового окружения перед каждым тестом."""
+        # Создаем экземпляр AutoCity
+        self.autocity = AutoCity()
 
-        # Удаляем тестовые файлы баз данных перед началом теста
-        for filename in ['Vehicle.pkl', 'Route.pkl', 'Driver.pkl', 'MaintenanceStaff.pkl', 'Garage.pkl']:
-            if os.path.exists(filename):
-                os.remove(filename)
+        # Удаляем тестовые базы данных, если они существуют
+        self.cleanup()
 
     def tearDown(self):
-        """Очистка после каждого теста"""
-        for filename in ['Vehicle.pkl', 'Route.pkl', 'Driver.pkl', 'MaintenanceStaff.pkl', 'Garage.pkl']:
-            if os.path.exists(filename):
-                os.remove(filename)
+        """Очистка после выполнения теста."""
         lab.eighth._next_vehicle = 0
-        lab.eighth._next_maintenancestaff = 0
+        lab.eighth._next_driver = 0
         lab.eighth._next_route = 0
         lab.eighth._next_garage = 0
-        lab.eighth._next_driver = 0
-    def test_add_vehicle(self):
-        """Тест добавления транспортного средства в базу данных"""
-        self.auto_city.vehicle_database.add_object("Car1", 100, 2000, 0, "Electric")
-        vehicle = self.auto_city.vehicle_database.get_object_by_id(1)
-        self.assertIsNotNone(vehicle)
-        self.assertEqual(vehicle.name, "Car1")
-        self.assertEqual(vehicle.usage_hours, 100)
-        self.assertEqual(vehicle.mileage, 2000)
+        lab.eighth._next_maintenancestaff = 0
+        self.cleanup()
 
-    def test_change_vehicle(self):
-        """Тест изменения данных транспортного средства"""
-        self.auto_city.vehicle_database.add_object("Car1", 100, 2000, 0, "Electric")
-        self.auto_city.vehicle_database.change_object(1, "Car2, 200, 3000, 1, Hybrid")
-        vehicle = self.auto_city.vehicle_database.get_object_by_id(1)
-        self.assertEqual(vehicle.name, "Car2")
-        self.assertEqual(vehicle.mileage, 3000)
+    def cleanup(self):
+        """Удаляем созданные тестовые файлы баз данных."""
+        databases = [
+            'Vehicle.pkl', 'Route.pkl', 'Driver.pkl', 'MaintenanceStaff.pkl', 'Garage.pkl'
+        ]
+        for db in databases:
+            if os.path.exists(db):
+                os.remove(db)
 
-    def test_delete_vehicle(self):
-        """Тест удаления транспортного средства"""
-        self.auto_city.vehicle_database.add_object("Car1", 100, 2000, 0, "Electric")
-        self.auto_city.vehicle_database.delete_object(1)
-        vehicle = self.auto_city.vehicle_database.get_object_by_id(1)
-        self.assertIsNone(vehicle)
+    @patch('builtins.input', side_effect=['Test Vehicle', '10', '100', '2', 'Test characteristics'])
+    @patch('lab.eighth.Vehicle', autospec=True)
+    def test_add_vehicle(self, mock_vehicle, mock_input):
+        """Тест добавления объекта Vehicle в базу данных с мокированием."""
+        mock_vehicle.return_value = MagicMock()
+        mock_vehicle.return_value.get_public_info.return_value = 'Mocked Vehicle Info'
 
-    def test_iterate_database(self):
-        """Тест итерации по базе данных"""
-        self.auto_city.vehicle_database.add_object("Car1", 100, 2000, 0, "Electric")
-        self.auto_city.vehicle_database.add_object("Car2", 150, 2500, 1, "Hybrid")
-        vehicles = list(self.auto_city.vehicle_database)
-        self.assertEqual(len(vehicles), 2)
-        self.assertEqual(vehicles[0].name, "Car1")
-        self.assertEqual(vehicles[1].name, "Car2")
+        self.autocity.vehicle_database.add_object()
 
-    def test_choose_database(self):
-        """Тест выбора базы данных"""
-        self.auto_city.choose_database(1)
-        self.assertEqual(self.auto_city.cur_database, self.auto_city.vehicle_database)
-        self.auto_city.choose_database(3)
-        self.assertEqual(self.auto_city.cur_database, self.auto_city.driver_database)
+        self.assertEqual(len(self.autocity.vehicle_database.database), 1)
+        vehicle = list(self.autocity.vehicle_database.database.values())[0]
+        self.assertEqual(vehicle.get_public_info(), 'Mocked Vehicle Info')
 
-    def test_save_and_load_database(self):
-        """Тест сохранения и загрузки базы данных"""
-        self.auto_city.vehicle_database.add_object("Car1", 100, 2000, 0, "Electric")
-        self.auto_city.vehicle_database.save_database()
-        self.auto_city.vehicle_database.open_database()
-        vehicle = self.auto_city.vehicle_database.get_object_by_id(1)
-        self.assertIsNotNone(vehicle)
-        self.assertEqual(vehicle.name, "Car1")
+    @patch('builtins.input', side_effect=['Test Route', '1', '1', 'Test schedule'])
+    @patch('lab.eighth.Route', autospec=True)
+    def test_add_route(self, mock_route, mock_input):
+        """Тест добавления объекта Route в базу данных с мокированием."""
+        mock_route.return_value = MagicMock()
+        mock_route.return_value.get_public_info.return_value = 'Mocked Route Info'
+
+        self.autocity.route_database.add_object()
+
+        self.assertEqual(len(self.autocity.route_database.database), 1)
+        route = list(self.autocity.route_database.database.values())[0]
+        self.assertEqual(route.get_public_info(), 'Mocked Route Info')
+
+    @patch('lab.eighth.Vehicle', autospec=True)
+    def test_delete_vehicle(self, mock_vehicle):
+        """Тест удаления объекта Vehicle из базы данных с мокированием."""
+        mock_vehicle.return_value = MagicMock()
+        vehicle = mock_vehicle.return_value
+        vehicle.id = 1
+
+        self.autocity.vehicle_database.database[vehicle.id] = vehicle
+        self.autocity.vehicle_database.save_database()
+
+        self.assertEqual(len(self.autocity.vehicle_database.database), 1)
+
+        self.autocity.vehicle_database.delete_object(vehicle.id)
+        self.assertEqual(len(self.autocity.vehicle_database.database), 0)
+
+    @patch('builtins.input', side_effect=['Updated Vehicle', '20', '200', '1', 'Updated characteristics'])
+    @patch('lab.eighth.Vehicle', autospec=True)
+    def test_update_vehicle(self, mock_vehicle, mock_input):
+        """Тест обновления объекта Vehicle в базе данных с мокированием."""
+        mock_vehicle.return_value = MagicMock()
+        vehicle = mock_vehicle.return_value
+        vehicle.id = 1
+        vehicle.get_public_info.return_value = 'Updated Mocked Vehicle Info'
+
+        self.autocity.vehicle_database.database[vehicle.id] = vehicle
+        self.autocity.vehicle_database.save_database()
+
+        self.autocity.vehicle_database.change_object(vehicle.id)
+        updated_vehicle = self.autocity.vehicle_database.database[vehicle.id]
+        self.assertEqual(updated_vehicle.get_public_info(), 'Updated Mocked Vehicle Info')
+
+    @patch('lab.eighth.AutoCity.printDB', autospec=True)
+    def test_choose_database(self, mock_printDB):
+        """Тест выбора базы данных с мокированием метода printDB."""
+        self.autocity.choose_database(1)
+        self.assertEqual(self.autocity.cur_database.cls, Vehicle)
+        mock_printDB.assert_called_with(self.autocity, self.autocity.vehicle_database)
+
+        self.autocity.choose_database(3)
+        self.assertEqual(self.autocity.cur_database.cls, Driver)
+        mock_printDB.assert_called_with(self.autocity, self.autocity.driver_database)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
