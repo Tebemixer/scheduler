@@ -19,7 +19,7 @@ class PersonsWindow(ctk.CTkToplevel):
         self.first_name_entry = ctk.CTkEntry(self, placeholder_text="Имя")
         self.first_name_entry.pack(pady=5, fill="x", padx=20)
 
-        self.job_entry = ctk.CTkEntry(self, placeholder_text="Должность (job)")
+        self.job_entry = ctk.CTkEntry(self, placeholder_text="Должность")
         self.job_entry.pack(pady=5, fill="x", padx=20)
 
         # Список
