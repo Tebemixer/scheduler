@@ -57,7 +57,7 @@ class BaseTaskWindow(ctk.CTkToplevel):
         self.persons_frame.pack(pady=5, fill="x", padx=20)
 
         self.add_person_button = ctk.CTkButton(
-            self.content,
+            self.persons_frame,
             text="+ Добавить личность",
             command=self.add_person_row
         )
@@ -148,9 +148,14 @@ class BaseTaskWindow(ctk.CTkToplevel):
 
         self.person_rows.append({"frame": row_frame, "combo": combo})
 
+        self.add_person_button.pack_forget()
+        self.add_person_button.pack(fill="x", padx=8, pady=(6, 8))
+
     def remove_person_row(self, row_frame) -> None:
         self.person_rows = [r for r in self.person_rows if r["frame"] != row_frame]
         row_frame.destroy()
+        self.add_person_button.pack_forget()
+        self.add_person_button.pack(fill="x", padx=8, pady=(6, 8))
 
     def get_selected_person_ids(self) -> List[int]:
         """Вернуть выбранные person_id; дубли не допускаются (будет ValueError)."""
