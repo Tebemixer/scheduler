@@ -4,7 +4,8 @@ import customtkinter as ctk
 from Task import Task
 from datetime import datetime, timedelta
 import re
-
+import tkinter as tk
+from typing import List, Tuple
 
 class BaseTaskWindow(ctk.CTkToplevel):
     """Общий предок для окон добавления/редактирования задач."""
@@ -32,6 +33,24 @@ class BaseTaskWindow(ctk.CTkToplevel):
 
         self.tags_entry = ctk.CTkEntry(self, placeholder_text="Заметки (через запятую)")
         self.tags_entry.pack(pady=5, fill="x", padx=20)
+
+        # --- Личности (постепенное добавление строками) ---
+        self.person_options: List[Tuple[int, str]] = self.load_person_options()  # (id, label)
+        self.person_rows = []  # list[dict(frame, combo)]
+
+        self.persons_label = ctk.CTkLabel(self, text="Личности")
+        self.persons_label.pack(pady=(10, 0))
+
+        self.persons_frame = ctk.CTkFrame(self)
+        self.persons_frame.pack(pady=5, fill="x", padx=20)
+
+        self.add_person_button = ctk.CTkButton(
+            self,
+            text="+ Добавить личность",
+            command=self.add_person_row
+        )
+        self.add_person_button.pack(pady=(5, 0))
+        self.add_person_row()
 
     def get_data(self) -> Task:
         """Возвращает задачу по данным из полей ввода."""
@@ -74,6 +93,68 @@ class BaseTaskWindow(ctk.CTkToplevel):
         else:
             return initial_date
 
+    def load_person_options(self) -> List[Tuple[int, str]]:
+        conn = sqlite3.connect(self.parent.tasks_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, last_name, first_name, job FROM persons ORDER BY last_name, first_name")
+        rows = cursor.fetchall()
+        conn.close()
+
+        options = []
+        for pid, last_name, first_name, job in rows:
+            label = f"{last_name} {first_name}"
+            if job:
+                label += f" — {job}"
+            options.append((pid, label))
+        return options
+
+    def add_person_row(self, preset_person_id: int | None = None) -> None:
+        labels = [lbl for _, lbl in self.person_options]
+        if not labels:
+            labels = ["(Сначала добавьте личности в меню)"]
+
+        row_frame = ctk.CTkFrame(self.persons_frame)
+        row_frame.pack(fill="x", pady=4)
+
+        combo = ctk.CTkComboBox(row_frame, values=labels, width=300)
+        combo.pack(side="left", padx=(8, 8), pady=6)
+
+        # preset (для edit)
+        if preset_person_id is not None:
+            id_to_label = {pid: lbl for pid, lbl in self.person_options}
+            if preset_person_id in id_to_label:
+                combo.set(id_to_label[preset_person_id])
+
+        del_btn = ctk.CTkButton(
+            row_frame, text="×", width=34, fg_color="red",
+            command=lambda: self.remove_person_row(row_frame)
+        )
+        del_btn.pack(side="left", padx=(0, 8), pady=6)
+
+        self.person_rows.append({"frame": row_frame, "combo": combo})
+
+    def remove_person_row(self, row_frame) -> None:
+        self.person_rows = [r for r in self.person_rows if r["frame"] != row_frame]
+        row_frame.destroy()
+        if not self.person_rows:
+            self.add_person_row()
+
+    def get_selected_person_ids(self) -> List[int]:
+        """Вернуть выбранные person_id; дубли не допускаются (будет ValueError)."""
+        label_to_id = {lbl: pid for pid, lbl in self.person_options}
+
+        selected = []
+        for r in self.person_rows:
+            lbl = r["combo"].get().strip()
+            if lbl in label_to_id:        # игнорируем пустые/подсказку
+                selected.append(label_to_id[lbl])
+
+        # запрет дублей
+        if len(selected) != len(set(selected)):
+            raise ValueError("Одна и та же личность выбрана несколько раз")
+
+        return selected
+
 
 class AddTaskWindow(BaseTaskWindow):
     """Окно создание задачи."""
@@ -95,6 +176,11 @@ class AddTaskWindow(BaseTaskWindow):
         except ValueError as error:
             show_error_popup(f"{error}")
             return
+        try:
+            selected_person_ids = self.get_selected_person_ids()
+        except ValueError as error:
+            show_error_popup(f"{error}")
+            return
 
         if not (len(self.date_notif_entry.get().strip())):
             notified = 1
@@ -104,18 +190,28 @@ class AddTaskWindow(BaseTaskWindow):
         task.notified = notified
         conn = sqlite3.connect(self.parent.tasks_db)
         cursor = conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON")
+
         cursor.execute("""
             INSERT INTO tasks (name, description, start_time, end_time, date, tags, done, notified, date_notif)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-                       (task.name, task.description, task.start_time, task.end_time, task.date, task.tags, task.done,
-                        task.notified, task.date_notif)
-                       )
+        """, (task.name, task.description, task.start_time, task.end_time, task.date,
+              task.tags, task.done, task.notified, task.date_notif))
+
+        task_id = cursor.lastrowid
+        if selected_person_ids:
+            cursor.executemany(
+                "INSERT INTO task_person(task_id, person_id) VALUES (?, ?)",
+                [(task_id, pid) for pid in selected_person_ids]
+            )
+
         conn.commit()
         conn.close()
 
         self.parent.update_task_list()
         self.destroy()
+
+
 
 
 class EditTaskWindow(BaseTaskWindow):
@@ -126,6 +222,7 @@ class EditTaskWindow(BaseTaskWindow):
         self.title("Редактировать задачу")
         self.geometry("400x400")
         self.date = self.task.date
+        self.preselect_persons()
 
         # Поля для редактирования данных
         self.name_entry.insert(0, self.task.name)
@@ -154,6 +251,8 @@ class EditTaskWindow(BaseTaskWindow):
             offvalue=0
         )
         self.checkbox.pack(pady=20)
+        self.prefill_person_rows()
+
 
         # Кнопки для сохранения или удаления задачи
         self.save_button = ctk.CTkButton(self, text="Сохранить изменения", command=self.update_task)
@@ -166,9 +265,11 @@ class EditTaskWindow(BaseTaskWindow):
         """Обновляет задачу в БД."""
         try:
             task = super().get_data()
+            selected_person_ids = self.get_selected_person_ids()
         except ValueError as error:
             show_error_popup(f"{error}")
             return
+
         task.done = self.done_status.get()
         if self.task.notified == 0 or len(self.date_notif_entry.get().strip()) != 0:
             task.notified = 0
@@ -181,6 +282,23 @@ class EditTaskWindow(BaseTaskWindow):
                        (task.name, task.description, task.start_time, task.end_time, task.tags,
                         task.done, task.notified, task.date_notif, self.task.id)
                        )
+        cursor.execute("DELETE FROM task_person WHERE task_id = ?", (self.task.id,))
+        if selected_person_ids:
+            cursor.executemany(
+                "INSERT INTO task_person(task_id, person_id) VALUES (?, ?)",
+                [(self.task.id, pid) for pid in selected_person_ids]
+            )
+
+
+        cursor.execute("DELETE FROM task_person WHERE task_id = ?", (self.task.id,))
+
+        selected_person_ids = self.get_selected_person_ids()
+        if selected_person_ids:
+            cursor.executemany(
+                "INSERT INTO task_person(task_id, person_id) VALUES (?, ?)",
+                [(self.task.id, pid) for pid in selected_person_ids]
+            )
+
         connection.commit()
         connection.close()
         self.parent.update_task_list()
@@ -210,3 +328,24 @@ class EditTaskWindow(BaseTaskWindow):
         minutes = int((total_seconds % 3600) // 60)
         result = f"{days:02}:{hours:02}:{minutes:02}"
         return result
+
+    def prefill_person_rows(self) -> None:
+        for r in list(self.person_rows):
+            r["frame"].destroy()
+        self.person_rows.clear()
+
+        conn = sqlite3.connect(self.parent.tasks_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT person_id FROM task_person WHERE task_id = ?", (self.task.id,))
+        person_ids = [row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        if not person_ids:
+            self.add_person_row()
+            return
+
+        for pid in person_ids:
+            self.add_person_row(preset_person_id=pid)
+
+
+

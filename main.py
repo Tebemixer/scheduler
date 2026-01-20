@@ -10,6 +10,8 @@ import time
 from datetime import datetime
 from Task import Task
 from tkinter import Event
+from PersonsWindow import PersonsWindow
+
 # Настройка глобальных параметров CustomTkinter
 ctk.set_appearance_mode("System")  # Темный/светлый режим
 ctk.set_default_color_theme("blue")  # Цветовая тема
@@ -54,6 +56,14 @@ class OrganizerApp(ctk.CTk):
         self.task_listbox.configure(state="normal")
         self.task_listbox.bind("<Double-1>", command=self.open_task_editor)
         self.task_listbox.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+        self.add_persons_button = ctk.CTkButton(
+            self,
+            text="Добавить личности",
+            command=self.open_persons_window
+        )
+        self.add_persons_button.grid(row=1, column=0, pady=10, padx=(0, 10), sticky="e")
+
 
         # Кнопка для добавления задачи
         self.add_task_button = ctk.CTkButton(self, text="Добавить задачу", command=self.open_add_task_window)
@@ -181,6 +191,10 @@ class OrganizerApp(ctk.CTk):
         close_button = ctk.CTkButton(notification_window, text="Закрыть", command=notification_window.destroy)
         close_button.pack(pady=10)
 
+    def open_persons_window(self) -> None:
+        PersonsWindow(self)
+
+
 
 def create_table() -> None:
     """Создает базу данных с таблицей tasks."""
@@ -200,6 +214,25 @@ def create_table() -> None:
             date_notif TEXT NOT NULL
         )
     """)
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS persons (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_name TEXT NOT NULL,
+                first_name TEXT NOT NULL,
+                job TEXT
+            )
+        """)
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS task_person (
+                task_id INTEGER NOT NULL,
+                person_id INTEGER NOT NULL,
+                PRIMARY KEY (task_id, person_id),
+                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+                FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
+            )
+        """)
     conn.commit()
     conn.close()
 
