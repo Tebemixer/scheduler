@@ -7,6 +7,7 @@ import re
 import tkinter as tk
 from typing import List, Tuple
 
+
 class BaseTaskWindow(ctk.CTkToplevel):
     """Общий предок для окон добавления/редактирования задач."""
     def __init__(self, parent):
@@ -15,41 +16,53 @@ class BaseTaskWindow(ctk.CTkToplevel):
         self.parent = parent
         self.attributes("-topmost", True)
         self.date = None
-        # Поля для ввода данных
-        self.name_entry = ctk.CTkEntry(self, placeholder_text="Название задачи")
+
+        self.minsize(400, 400)
+        self.resizable(True, True)
+
+        #Скроллируемая область для всего контента формы
+        self.content = ctk.CTkScrollableFrame(self)
+        self.content.pack(side="top", fill="both", expand=True)
+
+        #Footer снизу (для кнопок сохранить/удалить)
+        self.footer = ctk.CTkFrame(self)
+        self.footer.pack(side="bottom", fill="x", padx=20, pady=15)
+
+        self.name_entry = ctk.CTkEntry(self.content, placeholder_text="Название задачи")
         self.name_entry.pack(pady=5, fill="x", padx=20)
 
-        self.description_entry = ctk.CTkEntry(self, placeholder_text="Описание задачи")
+        self.description_entry = ctk.CTkEntry(self.content, placeholder_text="Описание задачи")
         self.description_entry.pack(pady=5, fill="x", padx=20)
 
-        self.start_time_entry = ctk.CTkEntry(self, placeholder_text="Время начала (ЧЧ:MM)")
+        self.start_time_entry = ctk.CTkEntry(self.content, placeholder_text="Время начала (ЧЧ:MM)")
         self.start_time_entry.pack(pady=5, fill="x", padx=20)
 
-        self.end_time_entry = ctk.CTkEntry(self, placeholder_text="Время окончания (ЧЧ:MM)")
+        self.end_time_entry = ctk.CTkEntry(self.content, placeholder_text="Время окончания (ЧЧ:MM)")
         self.end_time_entry.pack(pady=5, fill="x", padx=20)
 
-        self.date_notif_entry = ctk.CTkEntry(self, placeholder_text="Напомнить за (ДД:ЧЧ:MM)")
+        self.date_notif_entry = ctk.CTkEntry(self.content, placeholder_text="Напомнить за (ДД:ЧЧ:MM)")
         self.date_notif_entry.pack(pady=5, fill="x", padx=20)
 
-        self.tags_entry = ctk.CTkEntry(self, placeholder_text="Заметки (через запятую)")
+        self.tags_entry = ctk.CTkEntry(self.content, placeholder_text="Заметки (через запятую)")
         self.tags_entry.pack(pady=5, fill="x", padx=20)
 
         # --- Личности (постепенное добавление строками) ---
         self.person_options: List[Tuple[int, str]] = self.load_person_options()  # (id, label)
         self.person_rows = []  # list[dict(frame, combo)]
 
-        self.persons_label = ctk.CTkLabel(self, text="Личности")
+        self.persons_label = ctk.CTkLabel(self.content, text="Личности")
         self.persons_label.pack(pady=(10, 0))
 
-        self.persons_frame = ctk.CTkFrame(self)
+        self.persons_frame = ctk.CTkFrame(self.content)
         self.persons_frame.pack(pady=5, fill="x", padx=20)
 
         self.add_person_button = ctk.CTkButton(
-            self,
+            self.content,
             text="+ Добавить личность",
             command=self.add_person_row
         )
-        self.add_person_button.pack(pady=(5, 0))
+        self.add_person_button.pack(pady=(5, 10))
+
         self.add_person_row()
 
     def get_data(self) -> Task:
@@ -74,8 +87,10 @@ class BaseTaskWindow(ctk.CTkToplevel):
         description = self.description_entry.get().strip()
         tags = self.tags_entry.get().strip()
 
-        task = Task(name, description, start_time, end_time, self.date, tags, done=0, notified=1,
-                    date_notif=date_notif)
+        task = Task(
+            name, description, start_time, end_time, self.date, tags,
+            done=0, notified=1, date_notif=date_notif
+        )
         return task
 
     def get_date_notif(self, start_time: str, date_notif: str) -> str:
@@ -84,6 +99,7 @@ class BaseTaskWindow(ctk.CTkToplevel):
             initial_date = self.date + ' ' + start_time
         else:
             initial_date = self.date + ' 00:00'
+
         base_date = datetime.strptime(initial_date, self.parent.date_format)
         if len(self.date_notif_entry.get().strip()):
             days, hours, minutes = map(int, date_notif.split(":"))
@@ -146,10 +162,9 @@ class BaseTaskWindow(ctk.CTkToplevel):
         selected = []
         for r in self.person_rows:
             lbl = r["combo"].get().strip()
-            if lbl in label_to_id:        # игнорируем пустые/подсказку
+            if lbl in label_to_id:  # игнорируем пустые/подсказку
                 selected.append(label_to_id[lbl])
 
-        # запрет дублей
         if len(selected) != len(set(selected)):
             raise ValueError("Одна и та же личность выбрана несколько раз")
 
@@ -165,9 +180,8 @@ class AddTaskWindow(BaseTaskWindow):
 
         self.date = self.parent.calendar.get_date()
 
-        # Кнопка для сохранения задачи
-        self.save_button = ctk.CTkButton(self, text="Сохранить задачу", command=self.add_task)
-        self.save_button.pack(pady=20)
+        self.save_button = ctk.CTkButton(self.footer, text="Сохранить задачу", command=self.add_task)
+        self.save_button.pack(fill="x")
 
     def add_task(self) -> None:
         """Добавляет задачу в базу данных."""
@@ -176,6 +190,7 @@ class AddTaskWindow(BaseTaskWindow):
         except ValueError as error:
             show_error_popup(f"{error}")
             return
+
         try:
             selected_person_ids = self.get_selected_person_ids()
         except ValueError as error:
@@ -212,8 +227,6 @@ class AddTaskWindow(BaseTaskWindow):
         self.destroy()
 
 
-
-
 class EditTaskWindow(BaseTaskWindow):
     """Окно редактирования задачи."""
     def __init__(self, parent, task):
@@ -243,22 +256,21 @@ class EditTaskWindow(BaseTaskWindow):
 
         self.done_status = ctk.IntVar(value=self.task.done)
         self.checkbox = ctk.CTkCheckBox(
-            self,
+            self.content,
             text="Выполнено",
             variable=self.done_status,
             onvalue=1,
             offvalue=0
         )
         self.checkbox.pack(pady=20)
+
         self.prefill_person_rows()
 
+        self.save_button = ctk.CTkButton(self.footer, text="Сохранить изменения", command=self.update_task)
+        self.save_button.pack(fill="x", pady=(0, 10))
 
-        # Кнопки для сохранения или удаления задачи
-        self.save_button = ctk.CTkButton(self, text="Сохранить изменения", command=self.update_task)
-        self.save_button.pack(pady=10)
-
-        self.delete_button = ctk.CTkButton(self, text="Удалить задачу", fg_color="red", command=self.delete_task)
-        self.delete_button.pack(pady=10)
+        self.delete_button = ctk.CTkButton(self.footer, text="Удалить задачу", fg_color="red", command=self.delete_task)
+        self.delete_button.pack(fill="x")
 
     def update_task(self) -> None:
         """Обновляет задачу в БД."""
@@ -276,22 +288,14 @@ class EditTaskWindow(BaseTaskWindow):
         connection = sqlite3.connect(self.parent.tasks_db)
         cursor = connection.cursor()
 
-        cursor.execute('UPDATE tasks SET name = ?, description = ?, start_time = ?, end_time =?, tags=?, done=?, '
-                       'notified=?, date_notif=?  WHERE id = ?',
-                       (task.name, task.description, task.start_time, task.end_time, task.tags,
-                        task.done, task.notified, task.date_notif, self.task.id)
-                       )
-        cursor.execute("DELETE FROM task_person WHERE task_id = ?", (self.task.id,))
-        if selected_person_ids:
-            cursor.executemany(
-                "INSERT INTO task_person(task_id, person_id) VALUES (?, ?)",
-                [(self.task.id, pid) for pid in selected_person_ids]
-            )
-
+        cursor.execute(
+            'UPDATE tasks SET name = ?, description = ?, start_time = ?, end_time =?, tags=?, done=?, '
+            'notified=?, date_notif=?  WHERE id = ?',
+            (task.name, task.description, task.start_time, task.end_time, task.tags,
+             task.done, task.notified, task.date_notif, self.task.id)
+        )
 
         cursor.execute("DELETE FROM task_person WHERE task_id = ?", (self.task.id,))
-
-        selected_person_ids = self.get_selected_person_ids()
         if selected_person_ids:
             cursor.executemany(
                 "INSERT INTO task_person(task_id, person_id) VALUES (?, ?)",
@@ -319,6 +323,7 @@ class EditTaskWindow(BaseTaskWindow):
             dt1 = datetime.strptime(task.date + ' ' + task.start_time, self.parent.date_format)
         else:
             dt1 = datetime.strptime(task.date + ' 00:00', self.parent.date_format)
+
         dt2 = datetime.strptime(task.date_notif, self.parent.date_format)
         delta = dt1 - dt2
         total_seconds = delta.total_seconds()
@@ -345,6 +350,3 @@ class EditTaskWindow(BaseTaskWindow):
 
         for pid in person_ids:
             self.add_person_row(preset_person_id=pid)
-
-
-
