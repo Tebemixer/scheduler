@@ -222,7 +222,6 @@ class EditTaskWindow(BaseTaskWindow):
         self.title("Редактировать задачу")
         self.geometry("400x400")
         self.date = self.task.date
-        self.preselect_persons()
 
         # Поля для редактирования данных
         self.name_entry.insert(0, self.task.name)
