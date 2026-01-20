@@ -63,7 +63,6 @@ class BaseTaskWindow(ctk.CTkToplevel):
         )
         self.add_person_button.pack(pady=(5, 10))
 
-        self.add_person_row()
 
     def get_data(self) -> Task:
         """Возвращает задачу по данным из полей ввода."""
@@ -152,8 +151,6 @@ class BaseTaskWindow(ctk.CTkToplevel):
     def remove_person_row(self, row_frame) -> None:
         self.person_rows = [r for r in self.person_rows if r["frame"] != row_frame]
         row_frame.destroy()
-        if not self.person_rows:
-            self.add_person_row()
 
     def get_selected_person_ids(self) -> List[int]:
         """Вернуть выбранные person_id; дубли не допускаются (будет ValueError)."""
@@ -345,7 +342,6 @@ class EditTaskWindow(BaseTaskWindow):
         conn.close()
 
         if not person_ids:
-            self.add_person_row()
             return
 
         for pid in person_ids:
